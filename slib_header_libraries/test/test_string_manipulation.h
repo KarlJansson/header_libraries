@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "columnize.hpp"
+#include "regexer.hpp"
 #include "splitter.hpp"
 
 TEST(StringManipulation, columnize_single_add) {
@@ -47,21 +48,29 @@ TEST(StringManipulation, columnize_multi_add) {
 TEST(StringManipulation, splitter) {
   auto splitter = sml::Splitter<' '>();
   std::string splitter_string = "this string is splitting on white space";
-  EXPECT_EQ(splitter.front(splitter_string), std::string("this"));
+  EXPECT_EQ(splitter.front(splitter_string), "this");
   EXPECT_EQ(splitter_string, std::string("string is splitting on white space"));
-  EXPECT_EQ(splitter.back(splitter_string), std::string("space"));
+  EXPECT_EQ(splitter.back(splitter_string), "space");
   EXPECT_EQ(splitter_string, std::string("string is splitting on white"));
   std::vector<std::string> expecte_split = splitter.split(splitter_string);
   EXPECT_EQ(expecte_split, std::vector<std::string>(
                                {"string", "is", "splitting", "on", "white"}));
   EXPECT_EQ(splitter_string, std::string("string is splitting on white"));
-  for (size_t i = 0; i < 5; ++i)
-    EXPECT_NE(splitter.front(splitter_string), std::string(""));
+  for (size_t i = 0; i < 5; ++i) EXPECT_NE(splitter.front(splitter_string), "");
   EXPECT_TRUE(splitter_string.empty());
-  EXPECT_EQ(splitter.front(splitter_string), std::string(""));
+  EXPECT_EQ(splitter.front(splitter_string), "");
   EXPECT_TRUE(splitter_string.empty());
-  EXPECT_EQ(splitter.back(splitter_string), std::string(""));
+  EXPECT_EQ(splitter.back(splitter_string), "");
   EXPECT_TRUE(splitter_string.empty());
   EXPECT_EQ(splitter.split(splitter_string), std::vector<std::string>({}));
   EXPECT_TRUE(splitter_string.empty());
+}
+
+TEST(StringManipulation, regexer) {
+  sml::Regexer rex;
+  std::string regex_string = "this string is splitting on white space";
+  EXPECT_TRUE(rex.contains(regex_string, "on white"));
+  EXPECT_FALSE(rex.contains(regex_string, "ot white"));
+  rex.replace(regex_string, " ", ".");
+  EXPECT_EQ(regex_string, "this.string.is.splitting.on.white.space");
 }
