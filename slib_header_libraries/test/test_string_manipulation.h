@@ -30,10 +30,14 @@ TEST(StringManipulation, columnize_multi_add) {
   sml::Columnize<4> table;
   table.Add("Value1", "Value2", "Value3", "Value4");
   table.Add("Value5", "Value6", "Value7", "Value8");
+  table.AddDivider("-");
+  table.Add("v1", "v2", "v3", "v4");
 
   std::string expectation =
       "Value1   Value2   Value3   Value4\n"
-      "Value5   Value6   Value7   Value8\n";
+      "Value5   Value6   Value7   Value8\n"
+      "------------------------------------\n"
+      "v1       v2       v3       v4\n";
   std::string actual = table.Get();
   EXPECT_EQ(expectation, actual);
 
