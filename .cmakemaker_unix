@@ -1,1 +1,7 @@
 cpp_version : c++17
+
+{
+	name : "tbb/tbb.h"
+  lib_dir : "tbb"
+  lib_dir : "libpthread.so"
+}

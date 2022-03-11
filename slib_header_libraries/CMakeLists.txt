@@ -5,13 +5,40 @@ cmake_minimum_required(VERSION 3.6)
 
 set(cpp_files
   ./source/string_manipulation/columnize.cc
+  ./include/entity_component_system/system_manager.h
+  ./include/entity_component_system/entity_manager.h
+  ./include/entity_component_system/entity.h
+  ./include/entity_component_system/mocks/system_manager_mock.h
+  ./include/entity_component_system/mocks/entity_manager_mock.h
+  ./test/test_entity_component_system.h
+  ./test/test_file_system_utility.h
   ./test/test_string_manipulation.h
 )
 
 source_group(include FILES
 )
 
+source_group(include/entity_component_system FILES
+  ./include/entity_component_system/system_manager.h
+  ./include/entity_component_system/entity_manager.h
+  ./include/entity_component_system/entity.h
+)
+
+source_group(include/entity_component_system/mocks FILES
+  ./include/entity_component_system/mocks/system_manager_mock.h
+  ./include/entity_component_system/mocks/entity_manager_mock.h
+)
+
 source_group(include/string_manipulation FILES
+)
+
+source_group(include/synchronization FILES
+)
+
+source_group(include/file_system FILES
+)
+
+source_group(include/tracing FILES
 )
 
 source_group(source FILES
@@ -22,6 +49,8 @@ source_group(source/string_manipulation FILES
 )
 
 source_group(test FILES
+  ./test/test_entity_component_system.h
+  ./test/test_file_system_utility.h
   ./test/test_string_manipulation.h
 )
 
@@ -29,13 +58,20 @@ add_library(header_libraries STATIC ${cpp_files})
 
 include_directories(header_libraries
   ./include
+  ./include/entity_component_system
+  ./include/entity_component_system/mocks
+  ./include/file_system
   ./include/string_manipulation
+  ./include/synchronization
+  ./include/tracing
   ./source
   ./source/string_manipulation
   ./test
 )
 
 target_link_libraries(header_libraries
+  tbb
+  libpthread.so
 )
 
 add_dependencies(header_libraries ALL_PRE_BUILD)

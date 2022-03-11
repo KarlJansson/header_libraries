@@ -4,6 +4,8 @@
 
 #include "precomp.h"
 
+#include "test_entity_component_system.h"
+#include "test_file_system_utility.h"
 #include "test_string_manipulation.h"
 
 int main(int argc, char** args) {

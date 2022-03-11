@@ -17,7 +17,12 @@ include_directories(testdriver
   ${GMOCK_INCLUDE_DIRS}
   ${GTEST_INCLUDE_DIRS}
   ../slib_header_libraries/include
+  ../slib_header_libraries/include/entity_component_system
+  ../slib_header_libraries/include/entity_component_system/mocks
+  ../slib_header_libraries/include/file_system
   ../slib_header_libraries/include/string_manipulation
+  ../slib_header_libraries/include/synchronization
+  ../slib_header_libraries/include/tracing
   ../slib_header_libraries/source
   ../slib_header_libraries/source/string_manipulation
   ../slib_header_libraries/test
@@ -28,6 +33,7 @@ target_link_libraries(testdriver
   ${GMOCK_LIBRARIES}
   ${GTEST_LIBRARIES}
   libpthread.so
+  tbb
 )
 
 add_dependencies(testdriver header_libraries testdriver ALL_PRE_BUILD)
