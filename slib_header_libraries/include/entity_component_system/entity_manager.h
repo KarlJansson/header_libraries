@@ -14,6 +14,7 @@
 
 #include "chunk_list.hpp"
 #include "entity.h"
+#include "tbb_templates.hpp"
 
 namespace ecs {
 template <typename T>
@@ -25,7 +26,6 @@ class RemovedComponentsHolder {
   RemovedComponentsHolder(const std::vector<T>* comps, std::vector<Ent>* ents,
                           std::vector<size_t>* comp_locs)
       : components(comps), entities(ents), component_locs(comp_locs) {}
-  RemovedComponentsHolder(const RemovedComponentsHolder& copy) = delete;
   RemovedComponentsHolder& operator=(const RemovedComponentsHolder& copy) =
       delete;
 
@@ -77,7 +77,6 @@ class Components {
  public:
   Components(std::vector<T>* comps, std::vector<Ent>* ents)
       : components(comps), entities(ents) {}
-  Components(const Components& copy) = delete;
   Components& operator=(const Components& copy) = delete;
 
   template <typename T1, typename T2>
@@ -120,7 +119,6 @@ class ConstComponents {
  public:
   ConstComponents(const std::vector<T>* comps, std::vector<Ent>* ents)
       : components(comps), entities(ents) {}
-  ConstComponents(const ConstComponents& copy) = delete;
   ConstComponents& operator=(const ConstComponents& copy) = delete;
 
   template <typename T1, typename T2>
@@ -163,7 +161,6 @@ class UpdatedComponents {
  public:
   UpdatedComponents(T comps, std::vector<Ent>* ents, std::vector<size_t>* inds)
       : components(comps), entities(ents), indices(inds) {}
-  UpdatedComponents(const UpdatedComponents& copy) = delete;
   UpdatedComponents& operator=(const UpdatedComponents& copy) = delete;
 
   template <typename T1, typename T2>
@@ -212,11 +209,11 @@ class EntityManager {
   Entity<EntityManager> CreateEntity() { return Entity<EntityManager>(this); }
 
   void SyncSwap() {
-    // if (data_store_updates_.size() < 20)
-    for (auto& f : data_store_updates_) f();
-    // else
-    //   parallel_for(data_store_updates_,
-    //                [this](size_t i) { data_store_updates_[i](); });
+    if (data_store_updates_.size() < 20)
+      for (auto& f : data_store_updates_) f();
+    else
+      tbb_templates::parallel_for(
+          data_store_updates_, [this](size_t i) { data_store_updates_[i](); });
 
     while (!remove_component_.empty()) {
       (remove_component_.back())();
@@ -258,7 +255,8 @@ class EntityManager {
         (*data_store->entities.back().loc_map_)[typeid(T)].emplace_back(0);
         data_store->components[0].emplace_back(*ptr);
         data_store->components[1].emplace_back(*ptr);
-        data_store_updates_.emplace_back([this]() { UpdateDatastore<T>(); });
+        data_store_updates_.emplace_back(
+            [this]() { UpdateDatastore<T, Ent>(); });
       } else {
         auto data_store =
             std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
@@ -376,28 +374,6 @@ class EntityManager {
   }
 
   template <typename T, typename Ent>
-  void UpdateDatastore() {
-    if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
-      auto data_store =
-          std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
-
-      auto sort_unique = [](auto& vec) {
-        std::sort(std::begin(vec), std::end(vec));
-        vec.erase(std::unique(std::begin(vec), std::end(vec)), std::end(vec));
-      };
-      sort_unique(data_store->dirty_components);
-
-      auto read_buffer_id = write_buffer_id_ == 0 ? 1 : 0;
-      for (auto ind : data_store->dirty_components)
-        data_store->components[read_buffer_id][ind] =
-            data_store->components[write_buffer_id_][ind];
-      data_store->updated_components.swap(data_store->dirty_components);
-      data_store->dirty_components.clear();
-      data_store->added_components.clear();
-    }
-  }
-
-  template <typename T, typename Ent>
   T* AddComponent(Ent& entity) {
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_front([this, ptr, entity]() {
@@ -502,6 +478,28 @@ class EntityManager {
   }
 
  private:
+  template <typename T, typename Ent>
+  void UpdateDatastore() {
+    if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
+      auto data_store =
+          std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
+
+      auto sort_unique = [](auto& vec) {
+        std::sort(std::begin(vec), std::end(vec));
+        vec.erase(std::unique(std::begin(vec), std::end(vec)), std::end(vec));
+      };
+      sort_unique(data_store->dirty_components);
+
+      auto read_buffer_id = write_buffer_id_ == 0 ? 1 : 0;
+      for (auto ind : data_store->dirty_components)
+        data_store->components[read_buffer_id][ind] =
+            data_store->components[write_buffer_id_][ind];
+      data_store->updated_components.swap(data_store->dirty_components);
+      data_store->dirty_components.clear();
+      data_store->added_components.clear();
+    }
+  }
+
   template <typename T, typename Ent>
   class DataStore {
    public:

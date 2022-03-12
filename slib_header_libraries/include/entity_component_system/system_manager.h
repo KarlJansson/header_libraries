@@ -34,7 +34,7 @@ class SystemManager {
       sys_holder.system = std::any(sys);
       sys_holder.execute = [this, sys_weak](EntMgr& ent_mgr) {
         if (auto sys = sys_weak.lock(); sys)
-          sys->template Step<EntMgr, Ent, SystemManager>(ent_mgr, *this);
+          sys->template Step<Ent, EntMgr, SystemManager>(ent_mgr, *this);
       };
       sys_holder.dependencies = [sys_weak]() -> auto {
         if (auto sys = sys_weak.lock(); sys) return sys->Dependencies();

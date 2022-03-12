@@ -1,5 +1,22 @@
 #pragma once
 
+#define ent_add_component(e, t) e.template AddComponent<t, Ent>()
+#define ent_component_w(e, t) e.template ComponentW<t, Ent>()
+#define ent_component_r(e, t) e.template ComponentR<t, Ent>()
+#define ent_components_r(e, t) e.template ComponentsR<t, Ent>()
+#define ent_components_w(e, t) e.template ComponentsW<t, Ent>()
+#define ent_remove_component(e, t) e.template RemoveComponent<t>()
+
+#define emgr_added_components_w(m, t) m.template AddedComponentsW<t, Ent>()
+#define emgr_added_components_r(m, t) m.template AddedComponentsR<t, Ent>()
+#define emgr_updated_components_w(m, t) m.template UpdatedComponentsW<t, Ent>()
+#define emgr_updated_components_r(m, t) m.template UpdatedComponentsR<t, Ent>()
+#define emgr_removed_components(m, t) m.template RemovedComponents<t, Ent>()
+#define emgr_entities(m, t) m.template Entities<t, Ent>()
+
+#define smgr_add_system(m, t) m.template AddSystem<t>()
+#define smgr_remove_system(m, t) m.template RemoveSystem<t>()
+
 namespace ecs {
 template <typename T>
 using dsm = std::unordered_map<std::type_index, T>;

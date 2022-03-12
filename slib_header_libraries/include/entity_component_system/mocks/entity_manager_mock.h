@@ -4,22 +4,40 @@
 #include <gtest/gtest.h>
 
 #include "entity.h"
+#include "entity_manager.h"
 
 namespace ecs {
-#define REGISTER_COMPONENT_TYPE(type)                                       \
-  MOCK_METHOD(const type*, ComponentR, (type), (const));                    \
-  MOCK_METHOD(const type*, ComponentR,                                      \
-              (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t),  \
-              (const));                                                     \
-  MOCK_METHOD(type*, ComponentW, (type));                                   \
-  MOCK_METHOD(type*, ComponentW,                                            \
-              (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t)); \
-  MOCK_METHOD(type*, AddComponent, (type));                                 \
-  MOCK_METHOD(type*, AddComponent,                                          \
-              (type, ecs::Entity<ecs::EntityManagerMock>&));                \
-  MOCK_METHOD(void, RemoveComponent, (type));                               \
-  MOCK_METHOD(void, RemoveComponent,                                        \
-              (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t));
+#define REGISTER_COMPONENT_TYPE(type)                                        \
+  MOCK_METHOD(const type*, ComponentR, (type), (const));                     \
+  MOCK_METHOD(const type*, ComponentR,                                       \
+              (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t),   \
+              (const));                                                      \
+  MOCK_METHOD(type*, ComponentW, (type));                                    \
+  MOCK_METHOD(type*, ComponentW,                                             \
+              (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t));  \
+  MOCK_METHOD(type*, AddComponent, (type));                                  \
+  MOCK_METHOD(type*, AddComponent,                                           \
+              (type, ecs::Entity<ecs::EntityManagerMock>&));                 \
+  MOCK_METHOD((UpdatedComponents<std::vector<type>*,                         \
+                                 ecs::Entity<ecs::EntityManagerMock>>),      \
+              AddedComponentsW, (type));                                     \
+  MOCK_METHOD((UpdatedComponents<const std::vector<type>*,                   \
+                                 ecs::Entity<ecs::EntityManagerMock>>),      \
+              AddedComponentsR, (type));                                     \
+  MOCK_METHOD((UpdatedComponents<std::vector<type>*,                         \
+                                 ecs::Entity<ecs::EntityManagerMock>>),      \
+              UpdatedComponentsW, (type));                                   \
+  MOCK_METHOD((UpdatedComponents<const std::vector<type>*,                   \
+                                 ecs::Entity<ecs::EntityManagerMock>>),      \
+              UpdatedComponentsR, (type));                                   \
+  MOCK_METHOD(void, RemoveComponent, (type));                                \
+  MOCK_METHOD(void, RemoveComponent,                                         \
+              (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t));  \
+  MOCK_METHOD(                                                               \
+      (RemovedComponentsHolder<type, ecs::Entity<ecs::EntityManagerMock>>),  \
+      RemovedComponents, (type));                                            \
+  MOCK_METHOD((std::vector<ecs::Entity<ecs::EntityManagerMock>>*), Entities, \
+              (type));
 
 class EntityManagerMock {
  public:
@@ -74,6 +92,36 @@ class EntityManagerMock {
   void RemoveComponent(Ent& ent, std::uint64_t sub_lock) {
     (*ent.loc_map_)[typeid(T)].pop_back();
     RemoveComponent(T{}, ent, sub_lock);
+  }
+
+  template <typename T, typename Ent>
+  UpdatedComponents<std::vector<T>*, Ent> AddedComponentsW() {
+    return AddedComponentsW(T{});
+  }
+
+  template <typename T, typename Ent>
+  UpdatedComponents<const std::vector<T>*, Ent> AddedComponentsR() {
+    return AddedComponentsR(T{});
+  }
+
+  template <typename T, typename Ent>
+  UpdatedComponents<std::vector<T>*, Ent> UpdatedComponentsW() {
+    return UpdatedComponentsW(T{});
+  }
+
+  template <typename T, typename Ent>
+  UpdatedComponents<const std::vector<T>*, Ent> UpdatedComponentsR() {
+    return UpdatedComponentsR(T{});
+  }
+
+  template <typename T, typename Ent>
+  RemovedComponentsHolder<T, Ent> RemovedComponents() {
+    return RemovedComponents(T{});
+  }
+
+  template <typename T, typename Ent>
+  std::vector<Ent>* Entities() {
+    return Entities(T{});
   }
 };
 }  // namespace ecs

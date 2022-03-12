@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.6)
 
 set(cpp_files
   ./source/string_manipulation/columnize.cc
+  ./benchmark/benchmark_entity_component_system.h
+  ./benchmark/benchmark_chunk_list.h
   ./include/entity_component_system/system_manager.h
   ./include/entity_component_system/entity_manager.h
   ./include/entity_component_system/entity.h
@@ -41,6 +43,11 @@ source_group(include/file_system FILES
 source_group(include/tracing FILES
 )
 
+source_group(benchmark FILES
+  ./benchmark/benchmark_entity_component_system.h
+  ./benchmark/benchmark_chunk_list.h
+)
+
 source_group(source FILES
 )
 
@@ -57,6 +64,7 @@ source_group(test FILES
 add_library(header_libraries STATIC ${cpp_files})
 
 include_directories(header_libraries
+  ./benchmark
   ./include
   ./include/entity_component_system
   ./include/entity_component_system/mocks
