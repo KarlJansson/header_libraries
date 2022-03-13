@@ -124,4 +124,6 @@ class EntityManagerMock {
     return Entities(T{});
   }
 };
+
+using MockEntity_t = Entity<EntityManagerMock>;
 }  // namespace ecs

@@ -112,4 +112,6 @@ class SystemManager {
   synchronization::ChunkList<std::function<void(void)>, 16>
       remove_system_cache_;
 };
+
+using SystemManager_t = SystemManager<ecs::EntityManager, ecs::Entity_t>;
 }  // namespace ecs

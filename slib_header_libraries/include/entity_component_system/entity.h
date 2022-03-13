@@ -1,5 +1,12 @@
 #pragma once
 
+#include <functional>
+#include <limits>
+#include <memory>
+#include <typeindex>
+#include <unordered_map>
+#include <vector>
+
 #define ent_add_component(e, t) e.template AddComponent<t, Ent>()
 #define ent_component_w(e, t) e.template ComponentW<t, Ent>()
 #define ent_component_r(e, t) e.template ComponentR<t, Ent>()
@@ -7,6 +14,10 @@
 #define ent_components_w(e, t) e.template ComponentsW<t, Ent>()
 #define ent_remove_component(e, t) e.template RemoveComponent<t>()
 
+#define emgr_add_component(m, t) m.template AddComponent<t, Ent>()
+#define emgr_remove_component(m, t) m.template RemoveComponent<t, Ent>()
+#define emgr_components_w(m, t) m.template ComponentsW<t, Ent>()
+#define emgr_components_r(m, t) m.template ComponentsR<t, Ent>()
 #define emgr_added_components_w(m, t) m.template AddedComponentsW<t, Ent>()
 #define emgr_added_components_r(m, t) m.template AddedComponentsR<t, Ent>()
 #define emgr_updated_components_w(m, t) m.template UpdatedComponentsW<t, Ent>()
@@ -26,7 +37,6 @@ class EntityComponents {
  public:
   EntityComponents(size_t size, std::function<T*(size_t)> func)
       : size(size), func(func) {}
-  EntityComponents(const EntityComponents& copy) = delete;
   EntityComponents& operator=(const EntityComponents& copy) = delete;
 
   class iterator {

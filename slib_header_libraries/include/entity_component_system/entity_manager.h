@@ -6,6 +6,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <typeindex>
 #include <unordered_map>
@@ -103,6 +104,7 @@ class Components {
     if (components) return iterator(components->data(), entities->data());
     return iterator<T, Ent>(nullptr, nullptr);
   }
+
   auto end() {
     if (components)
       return iterator(components->data() + components->size(),
@@ -110,8 +112,18 @@ class Components {
     return iterator<T, Ent>(nullptr, nullptr);
   }
 
-  std::vector<T>* components;
-  std::vector<Ent>* entities;
+  size_t size() {
+    if (components && entities)
+      return std::min(components->size(), entities->size());
+    return 0;
+  }
+
+  auto operator[](size_t i) {
+    return std::tuple(&(*components)[i], &(*entities)[i]);
+  }
+
+  std::vector<T>* components{nullptr};
+  std::vector<Ent>* entities{nullptr};
 };
 
 template <typename T, typename Ent>
@@ -145,6 +157,7 @@ class ConstComponents {
     if (components) return iterator(components->data(), entities->data());
     return iterator<const T, Ent>(nullptr, nullptr);
   }
+
   auto end() {
     if (components)
       return iterator(components->data() + components->size(),
@@ -152,8 +165,18 @@ class ConstComponents {
     return iterator<const T, Ent>(nullptr, nullptr);
   }
 
-  const std::vector<T>* components;
-  std::vector<Ent>* entities;
+  size_t size() {
+    if (components && entities)
+      return std::min(components->size(), entities->size());
+    return 0;
+  }
+
+  auto operator[](size_t i) {
+    return std::tuple(&(*components)[i], &(*entities)[i]);
+  }
+
+  const std::vector<T>* components{nullptr};
+  std::vector<Ent>* entities{nullptr};
 };
 
 template <typename T, typename Ent>
@@ -527,16 +550,18 @@ class EntityManager {
   dsm<std::any> data_stores_;
   std::vector<std::function<void(void)>> data_store_updates_;
 
-  synchronization::ChunkList<std::function<void(void)>, 64>
+  synchronization::ChunkList<std::function<void(void)>, 1024>
       add_component_cache_;
 
   synchronization::ChunkList<
-      std::pair<std::function<void(void)>, std::function<void(void)>>, 64>
+      std::pair<std::function<void(void)>, std::function<void(void)>>, 1024>
       remove_component_cache_;
   std::vector<std::function<void(void)>> remove_component_;
 
-  const std::uint8_t MAX_ADD_PER_CYCLE{64};
-  const std::uint8_t MAX_REMOVE_PER_CYCLE{64};
+  const std::uint16_t MAX_ADD_PER_CYCLE{1024};
+  const std::uint16_t MAX_REMOVE_PER_CYCLE{1024};
 };
 
+using Entity_t = Entity<EntityManager>;
+using EntityManager_t = EntityManager;
 }  // namespace ecs

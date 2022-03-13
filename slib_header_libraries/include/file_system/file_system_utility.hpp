@@ -9,7 +9,7 @@
 namespace fsu {
 class FileReader {
  public:
-  std::string FileToString(const std::string& path) {
+  static std::string FileToString(const std::string& path) {
     std::string result;
     if (std::filesystem::exists(path)) {
       std::ifstream input(path,
@@ -27,7 +27,7 @@ class FileReader {
     return result;
   }
 
-  std::vector<std::string> FileToStringVector(const std::string& path) {
+  static std::vector<std::string> FileToStringVector(const std::string& path) {
     std::vector<std::string> result;
     if (std::filesystem::exists(path)) {
       std::ifstream input(path, std::ios::binary | std::ios::in);
@@ -43,7 +43,8 @@ class FileReader {
     return result;
   }
 
-  std::vector<std::vector<size_t>> FileToNumberMatrix(const std::string& path) {
+  static std::vector<std::vector<size_t>> FileToNumberMatrix(
+      const std::string& path) {
     std::vector<std::vector<size_t>> result;
     if (std::filesystem::exists(path)) {
       std::ifstream input(path, std::ios::binary | std::ios::in);
