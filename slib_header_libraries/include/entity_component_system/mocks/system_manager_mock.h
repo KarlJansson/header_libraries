@@ -4,8 +4,7 @@
 
 class TestSystem {
  public:
-  template <typename Ent, typename EntMgr, typename SysMgr>
-  void Step(EntMgr& ent_mgr, SysMgr& sys_mgr) {
+  system_step() {
     auto ent = ent_mgr.CreateEntity();
 
     if (auto comp = ent_add_component(ent, int); comp) *comp += 1;
@@ -14,32 +13,32 @@ class TestSystem {
     auto comp = ent_add_component(ent, double);
     auto comp_2 = ent_component_r(ent, double);
 
-    for (auto c : ent_components_r(ent, int)) {
+    for (auto& c : ent_components_r(ent, int)) {
     }
-    for (auto c : ent_components_w(ent, int)) *c += 1;
+    for (auto& c : ent_components_w(ent, int)) c += 1;
 
     ent_remove_component(ent, int);
     ent_remove_component(ent, double);
 
-    for (auto c : ent_components_w(ent, int)) *c += 1;
-    for (auto [c, ent] : emgr_added_components_w(ent_mgr, int)) *c += 1;
-    for (auto [c, ent] : emgr_added_components_r(ent_mgr, int)) {
+    for (auto& c : ent_components_w(ent, int)) c += 1;
+    for (const auto& [c, ent] : emgr_added_components_w(int)) c += 1;
+    for (auto [c, ent] : emgr_added_components_r(int)) {
     }
 
-    for (auto [c, ent] : emgr_updated_components_w(ent_mgr, int)) *c += 1;
-    for (auto [c, ent] : emgr_updated_components_r(ent_mgr, int)) {
+    for (const auto& [c, ent] : emgr_updated_components_w(int)) c += 1;
+    for (auto [c, ent] : emgr_updated_components_r(int)) {
     }
 
-    for (auto [c, ent] : emgr_removed_components(ent_mgr, int)) {
+    for (auto [c, ent] : emgr_removed_components(int)) {
     }
 
-    if (auto ents = emgr_entities(ent_mgr, int); ents) {
+    if (auto ents = emgr_entities(int); ents) {
       for (auto ent : *ents) {
       }
     }
 
-    smgr_remove_system(sys_mgr, TestSystem);
-    smgr_add_system(sys_mgr, TestSystem);
+    smgr_remove_system(TestSystem);
+    smgr_add_system(TestSystem);
   }
 
   void Init() {}

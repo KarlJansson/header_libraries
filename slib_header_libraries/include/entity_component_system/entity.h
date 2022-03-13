@@ -14,19 +14,25 @@
 #define ent_components_w(e, t) e.template ComponentsW<t, Ent>()
 #define ent_remove_component(e, t) e.template RemoveComponent<t>()
 
-#define emgr_add_component(m, t) m.template AddComponent<t, Ent>()
-#define emgr_remove_component(m, t) m.template RemoveComponent<t, Ent>()
-#define emgr_components_w(m, t) m.template ComponentsW<t, Ent>()
-#define emgr_components_r(m, t) m.template ComponentsR<t, Ent>()
-#define emgr_added_components_w(m, t) m.template AddedComponentsW<t, Ent>()
-#define emgr_added_components_r(m, t) m.template AddedComponentsR<t, Ent>()
-#define emgr_updated_components_w(m, t) m.template UpdatedComponentsW<t, Ent>()
-#define emgr_updated_components_r(m, t) m.template UpdatedComponentsR<t, Ent>()
-#define emgr_removed_components(m, t) m.template RemovedComponents<t, Ent>()
-#define emgr_entities(m, t) m.template Entities<t, Ent>()
+#define emgr_add_component(t) ent_mgr.template AddComponent<t, Ent>()
+#define emgr_remove_component(t) ent_mgr.template RemoveComponent<t, Ent>()
+#define emgr_components_w(t) ent_mgr.template ComponentsW<t, Ent>()
+#define emgr_components_r(t) ent_mgr.template ComponentsR<t, Ent>()
+#define emgr_added_components_w(t) ent_mgr.template AddedComponentsW<t, Ent>()
+#define emgr_added_components_r(t) ent_mgr.template AddedComponentsR<t, Ent>()
+#define emgr_updated_components_w(t) \
+  ent_mgr.template UpdatedComponentsW<t, Ent>()
+#define emgr_updated_components_r(t) \
+  ent_mgr.template UpdatedComponentsR<t, Ent>()
+#define emgr_removed_components(t) ent_mgr.template RemovedComponents<t, Ent>()
+#define emgr_entities(t) ent_mgr.template Entities<t, Ent>()
 
-#define smgr_add_system(m, t) m.template AddSystem<t>()
-#define smgr_remove_system(m, t) m.template RemoveSystem<t>()
+#define smgr_add_system(t) sys_mgr.template AddSystem<t>()
+#define smgr_remove_system(t) sys_mgr.template RemoveSystem<t>()
+
+#define system_step()                                       \
+  template <typename Ent, typename EntMgr, typename SysMgr> \
+  void Step(EntMgr& ent_mgr, SysMgr& sys_mgr)
 
 namespace ecs {
 template <typename T>
@@ -49,7 +55,7 @@ class EntityComponents {
       return *this;
     }
     bool operator!=(const iterator& other) { return other.sub_loc != sub_loc; }
-    const auto operator*() { return func(sub_loc); }
+    auto& operator*() { return *func(sub_loc); }
 
    private:
     size_t sub_loc;

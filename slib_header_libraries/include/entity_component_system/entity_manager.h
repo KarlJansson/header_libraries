@@ -47,8 +47,8 @@ class RemovedComponentsHolder {
     }
     auto operator*() {
       auto location = *loc.value();
-      return std::make_tuple(&components->at(location),
-                             &entities->at(location));
+      return std::make_tuple(std::ref(components[location]),
+                             std::ref(entities[location]));
     }
 
    private:
@@ -93,7 +93,9 @@ class Components {
     bool operator!=(const iterator& other) {
       return other.component != component;
     }
-    auto operator*() { return std::tuple(component, entity); }
+    auto operator*() {
+      return std::make_tuple(std::ref(*component), std::ref(*entity));
+    }
 
    private:
     T1* component;
@@ -119,7 +121,8 @@ class Components {
   }
 
   auto operator[](size_t i) {
-    return std::tuple(&(*components)[i], &(*entities)[i]);
+    return std::make_tuple(std::ref((*components)[i]),
+                           std::ref((*entities)[i]));
   }
 
   std::vector<T>* components{nullptr};
@@ -146,7 +149,9 @@ class ConstComponents {
     bool operator!=(const iterator& other) {
       return other.component != component;
     }
-    auto operator*() { return std::tuple(component, entity); }
+    auto operator*() {
+      return std::make_tuple(std::ref(*component), std::ref(*entity));
+    }
 
    private:
     T1* component;
@@ -172,7 +177,8 @@ class ConstComponents {
   }
 
   auto operator[](size_t i) {
-    return std::tuple(&(*components)[i], &(*entities)[i]);
+    return std::make_tuple(std::ref((*components)[i]),
+                           std::ref((*entities)[i]));
   }
 
   const std::vector<T>* components{nullptr};
@@ -189,36 +195,46 @@ class UpdatedComponents {
   template <typename T1, typename T2>
   class iterator {
    public:
-    iterator(T1 comp, T2 ent, std::optional<std::vector<size_t>::iterator> it)
-        : component(comp), entity(ent), ind_iterator(it) {}
+    iterator(T1 comp, T2 ent, size_t* inds)
+        : component(comp), entity(ent), ind_iterator(inds) {}
 
     auto operator++() {
-      (*ind_iterator)++;
+      ind_iterator++;
       return *this;
     }
+
     bool operator!=(const iterator& other) {
       return other.ind_iterator != ind_iterator;
     }
+
     auto operator*() {
-      return std::tuple(&component->at(*ind_iterator.value()),
-                        &entity->at(*ind_iterator.value()));
+      return std::make_tuple(std::ref((*component)[*ind_iterator]),
+                             std::ref((*entity)[*ind_iterator]));
     }
 
    private:
     T1 component;
     T2 entity;
-    std::optional<std::vector<size_t>::iterator> ind_iterator;
+    size_t* ind_iterator;
   };
 
   auto begin() {
-    if (components) return iterator(components, entities, indices->begin());
-    return iterator<T, std::vector<Ent>*>(nullptr, nullptr, std::nullopt);
+    if (components) return iterator(components, entities, indices->data());
+    return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
   }
+
   auto end() {
-    if (components) return iterator(components, entities, indices->end());
-    return iterator<T, std::vector<Ent>*>(nullptr, nullptr, std::nullopt);
+    if (components)
+      return iterator(components, entities, indices->data() + indices->size());
+    return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
   }
+
   auto size() { return indices->size(); }
+
+  auto operator[](size_t i) {
+    return std::make_tuple(std::ref((*components)[(*indices)[i]]),
+                           std::ref((*entities)[(*indices)[i]]));
+  }
 
   T components;
   std::vector<Ent>* entities;
