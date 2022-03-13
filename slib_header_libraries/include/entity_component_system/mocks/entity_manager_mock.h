@@ -36,7 +36,7 @@ namespace ecs {
   MOCK_METHOD(                                                               \
       (RemovedComponentsHolder<type, ecs::Entity<ecs::EntityManagerMock>>),  \
       RemovedComponents, (type));                                            \
-  MOCK_METHOD((std::vector<ecs::Entity<ecs::EntityManagerMock>>*), Entities, \
+  MOCK_METHOD((EntityHolder<ecs::Entity<ecs::EntityManagerMock>>), Entities, \
               (type));
 
 class EntityManagerMock {
@@ -120,7 +120,7 @@ class EntityManagerMock {
   }
 
   template <typename T, typename Ent>
-  std::vector<Ent>* Entities() {
+  EntityHolder<Ent> Entities() {
     return Entities(T{});
   }
 };

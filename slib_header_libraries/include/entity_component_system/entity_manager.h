@@ -33,44 +33,86 @@ class RemovedComponentsHolder {
   template <typename T1>
   class iterator {
    public:
-    iterator(T1 comps, std::vector<Ent>* ents,
-             std::optional<std::vector<size_t>::iterator> loc)
+    iterator(T1 comps, std::vector<Ent>* ents, size_t* loc)
         : components(comps), entities(ents), loc(loc) {}
 
     auto operator++() {
-      (*loc)++;
+      loc++;
       return *this;
     }
-    bool operator!=(const iterator& other) {
-      if (!other.loc.has_value() || !loc.has_value()) return false;
-      return other.loc.value() != loc.value();
-    }
+
+    bool operator!=(const iterator& other) { return other.loc != loc; }
+
     auto operator*() {
-      auto location = *loc.value();
-      return std::make_tuple(std::ref(components[location]),
-                             std::ref(entities[location]));
+      return std::make_tuple(std::ref(components[*loc]),
+                             std::ref(entities[*loc]));
     }
 
    private:
     T1 components;
     std::vector<Ent>* entities;
-    std::optional<std::vector<size_t>::iterator> loc;
+    size_t* loc;
   };
 
   auto begin() {
     if (components)
-      return iterator(components, entities, component_locs->begin());
-    return iterator<const std::vector<T>*>(nullptr, nullptr, std::nullopt);
+      return iterator(components, entities, component_locs->data());
+    return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
   }
+
   auto end() {
     if (components)
-      return iterator(components, entities, component_locs->end());
-    return iterator<const std::vector<T>*>(nullptr, nullptr, std::nullopt);
+      return iterator(components, entities,
+                      component_locs->data() + component_locs->size());
+    return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
   }
 
   const std::vector<T>* components;
   std::vector<Ent>* entities;
   std::vector<size_t>* component_locs;
+};
+
+template <typename Ent>
+class EntityHolder {
+ public:
+  EntityHolder(std::vector<Ent>* ents) : entities(ents) {}
+  EntityHolder& operator=(const EntityHolder& copy) = delete;
+
+  class iterator {
+   public:
+    iterator(Ent* ent) : entity(ent) {}
+
+    auto operator++() {
+      ++entity;
+      return *this;
+    }
+
+    bool operator!=(const iterator& other) { return other.entity != entity; }
+
+    auto operator*() { return *entity; }
+
+   private:
+    Ent* entity;
+  };
+
+  auto begin() {
+    if (entities) return iterator(entities->data());
+    return iterator(nullptr);
+  }
+
+  auto end() {
+    if (entities) return iterator(entities->data() + entities->size());
+    return iterator(nullptr);
+  }
+
+  size_t size() {
+    if (entities) return entities->size();
+    return 0;
+  }
+
+  auto operator[](size_t i) { return (*entities)[i]; }
+
+  std::vector<Ent>* entities{nullptr};
 };
 
 template <typename T, typename Ent>
@@ -405,11 +447,12 @@ class EntityManager {
   }
 
   template <typename T, typename Ent>
-  std::vector<Ent>* Entities() {
-    if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_))
-      return &std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second)
-                  ->entities;
-    return nullptr;
+  EntityHolder<Ent> Entities() {
+    if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
+      auto ds = std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
+      return EntityHolder<Ent>(&ds->entities);
+    }
+    return EntityHolder<Ent>(nullptr);
   }
 
   template <typename T, typename Ent>

@@ -48,11 +48,11 @@ void BM_add_remove_component(benchmark::State& state) {
 
   for (auto _ : state) {
     benchmark::DoNotOptimize(state.iterations());
-    auto comp = ent.AddComponent<int, ecs::Entity_t>();
-    *comp = 1;
+    auto& comp = ent.AddComponent<int, ecs::Entity_t>();
+    comp = 1;
     ent_mgr.SyncSwap();
-    comp = ent.ComponentW<int, ecs::Entity_t>();
-    *comp = 2;
+    auto comp_2 = ent.ComponentW<int, ecs::Entity_t>();
+    *comp_2 = 2;
     ent.RemoveComponent<int>();
     ent_mgr.SyncSwap();
   }

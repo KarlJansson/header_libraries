@@ -7,7 +7,11 @@ class TestSystem {
   system_step() {
     auto ent = ent_mgr.CreateEntity();
 
-    if (auto comp = ent_add_component(ent, int); comp) *comp += 1;
+    {
+      auto& comp = ent_add_component(ent, int);
+      comp += 1;
+    }
+
     if (auto comp = ent_component_w(ent, int); comp) *comp += 1;
 
     auto comp = ent_add_component(ent, double);
@@ -22,19 +26,17 @@ class TestSystem {
 
     for (auto& c : ent_components_w(ent, int)) c += 1;
     for (const auto& [c, ent] : emgr_added_components_w(int)) c += 1;
-    for (auto [c, ent] : emgr_added_components_r(int)) {
+    for (const auto& [c, ent] : emgr_added_components_r(int)) {
     }
 
     for (const auto& [c, ent] : emgr_updated_components_w(int)) c += 1;
-    for (auto [c, ent] : emgr_updated_components_r(int)) {
+    for (const auto& [c, ent] : emgr_updated_components_r(int)) {
     }
 
-    for (auto [c, ent] : emgr_removed_components(int)) {
+    for (const auto& [c, ent] : emgr_removed_components(int)) {
     }
 
-    if (auto ents = emgr_entities(int); ents) {
-      for (auto ent : *ents) {
-      }
+    for (const auto& ent : emgr_entities(int)) {
     }
 
     smgr_remove_system(TestSystem);

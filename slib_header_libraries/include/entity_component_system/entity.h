@@ -79,8 +79,8 @@ class Entity {
         loc_map_(std::make_shared<dsm<std::vector<std::uint64_t>>>()) {}
 
   template <typename T, typename Ent>
-  T* AddComponent() {
-    return ent_mgr_->template AddComponent<T, Ent>(*this);
+  T& AddComponent() {
+    return *ent_mgr_->template AddComponent<T, Ent>(*this);
   }
 
   template <typename T>

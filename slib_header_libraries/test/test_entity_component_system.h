@@ -45,7 +45,8 @@ TEST(EntityManagerMock, create_entity_and_components) {
 
   EXPECT_CALL(ent_mgr, RemovedComponents(Matcher<int>(_)))
       .WillOnce(Return(ecs::RemovedComponentsHolder(&comps, &ents, &inds)));
-  EXPECT_CALL(ent_mgr, Entities(Matcher<int>(_))).WillOnce(Return(&ents));
+  EXPECT_CALL(ent_mgr, Entities(Matcher<int>(_)))
+      .WillOnce(Return(ecs::EntityHolder(&ents)));
 
   double double_obj{1};
   EXPECT_CALL(ent_mgr, AddComponent(Matcher<double>(_), ent))
