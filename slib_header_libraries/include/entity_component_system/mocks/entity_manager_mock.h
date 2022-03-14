@@ -15,8 +15,8 @@ namespace ecs {
   MOCK_METHOD(type*, ComponentW, (type));                                    \
   MOCK_METHOD(type*, ComponentW,                                             \
               (type, ecs::Entity<ecs::EntityManagerMock>&, std::uint64_t));  \
-  MOCK_METHOD(type*, AddComponent, (type));                                  \
-  MOCK_METHOD(type*, AddComponent,                                           \
+  MOCK_METHOD(type&, AddComponent, (type));                                  \
+  MOCK_METHOD(type&, AddComponent,                                           \
               (type, ecs::Entity<ecs::EntityManagerMock>&));                 \
   MOCK_METHOD((UpdatedComponents<std::vector<type>*,                         \
                                  ecs::Entity<ecs::EntityManagerMock>>),      \
@@ -68,7 +68,7 @@ class EntityManagerMock {
   }
 
   template <typename T>
-  T* AddComponent() {
+  T& AddComponent() {
     return AddComponent(T{});
   }
 
@@ -83,7 +83,7 @@ class EntityManagerMock {
   }
 
   template <typename T, typename Ent>
-  T* AddComponent(Ent& ent) {
+  T& AddComponent(Ent& ent) {
     (*ent.loc_map_)[typeid(T)].emplace_back(0);
     return AddComponent(T{}, ent);
   }

@@ -22,7 +22,7 @@ TEST(EntityManagerMock, create_entity_and_components) {
 
   int int_obj{1};
   EXPECT_CALL(ent_mgr, AddComponent(Matcher<int>(_), ent))
-      .WillOnce(Return(&int_obj));
+      .WillOnce(ReturnRef(int_obj));
   EXPECT_CALL(ent_mgr, ComponentW(Matcher<int>(_), ent, 0))
       .WillRepeatedly(Return(&int_obj));
   EXPECT_CALL(ent_mgr, ComponentR(Matcher<int>(_), ent, 0))
@@ -50,7 +50,7 @@ TEST(EntityManagerMock, create_entity_and_components) {
 
   double double_obj{1};
   EXPECT_CALL(ent_mgr, AddComponent(Matcher<double>(_), ent))
-      .WillOnce(Return(&double_obj));
+      .WillOnce(ReturnRef(double_obj));
   EXPECT_CALL(ent_mgr, ComponentR(Matcher<double>(_), ent, 0))
       .WillRepeatedly(Return(&double_obj));
   EXPECT_CALL(ent_mgr, RemoveComponent(Matcher<double>(_), ent, 0));

@@ -80,7 +80,7 @@ class Entity {
 
   template <typename T, typename Ent>
   T& AddComponent() {
-    return *ent_mgr_->template AddComponent<T, Ent>(*this);
+    return ent_mgr_->template AddComponent<T, Ent>(*this);
   }
 
   template <typename T>

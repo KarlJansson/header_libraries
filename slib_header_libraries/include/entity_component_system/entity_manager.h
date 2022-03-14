@@ -320,7 +320,7 @@ class EntityManager {
   }
 
   template <typename T, typename Ent>
-  T* AddComponent() {
+  T& AddComponent() {
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_front([this, ptr]() {
       auto it = data_stores_.find(typeid(T));
@@ -347,7 +347,7 @@ class EntityManager {
         data_store->components[1][0] = *ptr;
       }
     });
-    return ptr.get();
+    return *ptr;
   }
 
   template <typename T, typename Ent>
@@ -456,7 +456,7 @@ class EntityManager {
   }
 
   template <typename T, typename Ent>
-  T* AddComponent(Ent& entity) {
+  T& AddComponent(Ent& entity) {
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_front([this, ptr, entity]() {
       auto it = data_stores_.find(typeid(T));
@@ -487,7 +487,7 @@ class EntityManager {
         data_store->components[1].emplace_back(*ptr);
       }
     });
-    return ptr.get();
+    return *ptr;
   }
 
   template <typename T, typename Ent>
