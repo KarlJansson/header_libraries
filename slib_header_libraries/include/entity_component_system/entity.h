@@ -16,6 +16,8 @@
 
 #define emgr_add_component(t) ent_mgr.template AddComponent<t, Ent>()
 #define emgr_remove_component(t) ent_mgr.template RemoveComponent<t, Ent>()
+#define emgr_component_w(t) ent_mgr.template ComponentW<t, Ent>()
+#define emgr_component_r(t) ent_mgr.template ComponentR<t, Ent>()
 #define emgr_components_w(t) ent_mgr.template ComponentsW<t, Ent>()
 #define emgr_components_r(t) ent_mgr.template ComponentsR<t, Ent>()
 #define emgr_added_components_w(t) ent_mgr.template AddedComponentsW<t, Ent>()

@@ -67,6 +67,21 @@ class RemovedComponentsHolder {
     return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
   }
 
+  auto size() {
+    if (component_locs) return component_locs->size();
+    return std::size_t(0);
+  }
+
+  auto empty() {
+    if (component_locs) return component_locs->size() == 0;
+    return true;
+  }
+
+  auto operator[](size_t i) {
+    return std::make_tuple(std::ref(components[(*component_locs)[i]]),
+                           std::ref(entities[(*component_locs)[i]]));
+  }
+
   const std::vector<T>* components;
   std::vector<Ent>* entities;
   std::vector<size_t>* component_locs;
@@ -105,9 +120,14 @@ class EntityHolder {
     return iterator(nullptr);
   }
 
-  size_t size() {
+  auto size() {
     if (entities) return entities->size();
-    return 0;
+    return std::size_t(0);
+  }
+
+  auto empty() {
+    if (entities) return entities->size() == 0;
+    return true;
   }
 
   auto operator[](size_t i) { return (*entities)[i]; }
@@ -156,10 +176,16 @@ class Components {
     return iterator<T, Ent>(nullptr, nullptr);
   }
 
-  size_t size() {
+  auto size() {
     if (components && entities)
       return std::min(components->size(), entities->size());
-    return 0;
+    return std::size_t(0);
+  }
+
+  auto empty() {
+    if (components && entities)
+      return std::min(components->size(), entities->size()) == 0;
+    return true;
   }
 
   auto operator[](size_t i) {
@@ -212,10 +238,16 @@ class ConstComponents {
     return iterator<const T, Ent>(nullptr, nullptr);
   }
 
-  size_t size() {
+  auto size() {
     if (components && entities)
       return std::min(components->size(), entities->size());
-    return 0;
+    return std::size_t(0);
+  }
+
+  auto empty() {
+    if (components && entities)
+      return std::min(components->size(), entities->size()) == 0;
+    return true;
   }
 
   auto operator[](size_t i) {
@@ -271,7 +303,15 @@ class UpdatedComponents {
     return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
   }
 
-  auto size() { return indices->size(); }
+  auto size() {
+    if (indices) return indices->size();
+    return std::size_t(0);
+  }
+
+  auto empty() {
+    if (indices) return indices->size() == 0;
+    return true;
+  }
 
   auto operator[](size_t i) {
     return std::make_tuple(std::ref((*components)[(*indices)[i]]),
