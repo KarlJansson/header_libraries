@@ -368,8 +368,7 @@ class EntityManager {
         auto data_store = std::make_shared<DataStore<T, Ent>>();
         data_stores_.emplace(typeid(T), std::any(data_store));
 
-        data_store->dirty_components.push_front(
-            data_store->components[0].size());
+        data_store->dirty_components.insert(data_store->components[0].size());
         data_store->added_components.emplace_back(
             data_store->components[0].size());
         data_store->entities.emplace_back(this);
@@ -381,7 +380,7 @@ class EntityManager {
       } else {
         auto data_store =
             std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
-        data_store->dirty_components.push_front(0);
+        data_store->dirty_components.insert(0);
         data_store->added_components.emplace_back(0);
         data_store->components[0][0] = *ptr;
         data_store->components[1][0] = *ptr;
@@ -403,7 +402,7 @@ class EntityManager {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto data_store =
           std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
-      data_store->dirty_components.push_front(0);
+      data_store->dirty_components.insert(0);
       return &data_store->components[write_buffer_id_][0];
     }
     return nullptr;
@@ -505,8 +504,7 @@ class EntityManager {
         data_stores_.emplace(typeid(T), std::any(data_store));
 
         (*entity.loc_map_)[typeid(T)].push_back(data_store->entities.size());
-        data_store->dirty_components.push_front(
-            data_store->components[0].size());
+        data_store->dirty_components.insert(data_store->components[0].size());
         data_store->added_components.emplace_back(
             data_store->components[0].size());
         data_store->entities.emplace_back(entity);
@@ -518,8 +516,7 @@ class EntityManager {
         auto data_store =
             std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
         (*entity.loc_map_)[typeid(T)].push_back(data_store->entities.size());
-        data_store->dirty_components.push_front(
-            data_store->components[0].size());
+        data_store->dirty_components.insert(data_store->components[0].size());
         data_store->added_components.emplace_back(
             data_store->components[0].size());
         data_store->entities.emplace_back(entity);
@@ -593,7 +590,7 @@ class EntityManager {
       if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return nullptr;
       auto data_store =
           std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
-      data_store->dirty_components.push_front(ent_loc);
+      data_store->dirty_components.insert(ent_loc);
       return &data_store->components[write_buffer_id_][ent_loc];
     }
     return nullptr;
@@ -607,10 +604,9 @@ class EntityManager {
           std::any_cast<std::shared_ptr<DataStore<T, Ent>>>(it->second);
 
       std::vector<size_t> dirty_components;
-      while (data_store->dirty_components.back()) {
-        dirty_components.emplace_back(*data_store->dirty_components.back());
-        data_store->dirty_components.pop_back();
-      }
+      for (auto& ind : data_store->dirty_components)
+        dirty_components.emplace_back(ind);
+      data_store->dirty_components.clear();
 
       auto sort_unique = [](auto& vec) {
         std::sort(std::begin(vec), std::end(vec));
@@ -642,7 +638,7 @@ class EntityManager {
     std::vector<T> components[2];
     std::vector<Ent> entities;
 
-    synchronization::ChunkList<size_t, 128> dirty_components;
+    tbb::concurrent_unordered_set<size_t> dirty_components;
     std::vector<size_t> removed_components;
     std::vector<size_t> updated_components;
     std::vector<size_t> added_components;
