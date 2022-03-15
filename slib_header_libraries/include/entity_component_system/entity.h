@@ -44,7 +44,7 @@ template <typename T>
 class EntityComponents {
  public:
   EntityComponents(size_t size, std::function<T*(size_t)> func)
-      : size(size), func(func) {}
+      : size_(size), func(func) {}
   EntityComponents& operator=(const EntityComponents& copy) = delete;
 
   class iterator {
@@ -65,10 +65,15 @@ class EntityComponents {
   };
 
   auto begin() { return iterator(0, func); }
-  auto end() { return iterator(size, func); }
+  auto end() { return iterator(size_, func); }
+
+  auto size() { return size_; }
+  auto empty() { return size_ == 0; }
+
+  auto operator[](size_t i) { return *func(i); }
 
  private:
-  size_t size;
+  size_t size_;
   std::function<T*(size_t)> func;
 };
 
