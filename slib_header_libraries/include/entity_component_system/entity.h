@@ -131,8 +131,14 @@ class Entity {
   bool operator<(const Entity& other) const {
     return loc_map_.get() < other.loc_map_.get();
   };
+  bool operator>(const Entity& other) const {
+    return loc_map_.get() > other.loc_map_.get();
+  };
   bool operator==(const Entity& other) const {
     return loc_map_.get() == other.loc_map_.get();
+  };
+  bool operator!=(const Entity& other) const {
+    return loc_map_.get() != other.loc_map_.get();
   };
 
  private:
