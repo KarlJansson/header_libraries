@@ -341,20 +341,14 @@ class EntityManager {
       remove_component_.pop_back();
     }
 
-    std::uint8_t counter{0};
-    while (add_component_cache_.back() && counter < MAX_ADD_PER_CYCLE) {
-      (*add_component_cache_.back())();
-      add_component_cache_.pop_back();
-      ++counter;
-    }
+    for (auto& entry : add_component_cache_) entry();
+    add_component_cache_.clear();
 
-    counter = 0;
-    while (remove_component_cache_.back() && counter < MAX_REMOVE_PER_CYCLE) {
-      remove_component_.emplace_back(remove_component_cache_.back()->first);
-      (remove_component_cache_.back()->second)();
-      remove_component_cache_.pop_back();
-      ++counter;
+    for (auto& [rem, rem_func] : remove_component_cache_) {
+      remove_component_.emplace_back(rem);
+      rem_func();
     }
+    remove_component_cache_.clear();
 
     write_buffer_id_ = write_buffer_id_ == 0 ? 1 : 0;
   }
@@ -362,7 +356,7 @@ class EntityManager {
   template <typename T, typename Ent>
   T& AddComponent() {
     auto ptr = std::make_shared<T>();
-    add_component_cache_.push_front([this, ptr]() {
+    add_component_cache_.push_back([this, ptr]() {
       auto it = data_stores_.find(typeid(T));
       if (it == std::end(data_stores_)) {
         auto data_store = std::make_shared<DataStore<T, Ent>>();
@@ -497,7 +491,7 @@ class EntityManager {
   template <typename T, typename Ent>
   T& AddComponent(Ent& entity) {
     auto ptr = std::make_shared<T>();
-    add_component_cache_.push_front([this, ptr, entity]() {
+    add_component_cache_.push_back([this, ptr, entity]() {
       auto it = data_stores_.find(typeid(T));
       if (it == std::end(data_stores_)) {
         auto data_store = std::make_shared<DataStore<T, Ent>>();
@@ -529,7 +523,7 @@ class EntityManager {
 
   template <typename T, typename Ent>
   void RemoveComponent(Ent& entity, std::uint64_t sub_loc) {
-    remove_component_cache_.push_front(std::make_pair(
+    remove_component_cache_.push_back(std::make_pair(
         [this, entity, sub_loc]() {
           auto ent_loc = entity.template Loc<T>(sub_loc);
           if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return;
@@ -649,11 +643,10 @@ class EntityManager {
   dsm<std::any> data_stores_;
   std::vector<std::function<void(void)>> data_store_updates_;
 
-  synchronization::ChunkList<std::function<void(void)>, 1024>
-      add_component_cache_;
+  tbb::concurrent_vector<std::function<void(void)>> add_component_cache_;
 
-  synchronization::ChunkList<
-      std::pair<std::function<void(void)>, std::function<void(void)>>, 1024>
+  tbb::concurrent_vector<
+      std::pair<std::function<void(void)>, std::function<void(void)>>>
       remove_component_cache_;
   std::vector<std::function<void(void)>> remove_component_;
 

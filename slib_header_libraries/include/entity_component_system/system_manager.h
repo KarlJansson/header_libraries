@@ -27,7 +27,7 @@ class SystemManager {
 
   template <typename T>
   void AddSystem() {
-    add_system_cache_.push_front([this]() {
+    add_system_cache_.push_back([this]() {
       SystemHolder sys_holder;
       auto sys = std::make_shared<T>();
       std::weak_ptr<T> sys_weak = sys;
@@ -47,7 +47,7 @@ class SystemManager {
 
   template <typename T>
   void RemoveSystem() {
-    remove_system_cache_.push_front([this]() { systems_.erase(typeid(T)); });
+    remove_system_cache_.push_back([this]() { systems_.erase(typeid(T)); });
   }
 
   template <typename T>
@@ -58,18 +58,14 @@ class SystemManager {
   }
 
   void SyncSystems() {
-    bool update_execution_order = false;
-    while (auto sys = add_system_cache_.back()) {
-      (*sys)();
-      add_system_cache_.pop_back();
-      update_execution_order = true;
-    }
-    while (auto sys = remove_system_cache_.back()) {
-      (*sys)();
-      remove_system_cache_.pop_back();
-      update_execution_order = true;
-    }
-    if (update_execution_order) CalculateExecutionOrder();
+    for (auto& sys : add_system_cache_) sys();
+    for (auto& sys : remove_system_cache_) sys();
+
+    if (!remove_system_cache_.empty() || !add_system_cache_.empty())
+      CalculateExecutionOrder();
+
+    remove_system_cache_.clear();
+    add_system_cache_.clear();
   }
 
  private:
@@ -108,9 +104,8 @@ class SystemManager {
   std::vector<std::vector<SystemHolder*>> execution_order_;
   std::unordered_map<std::type_index, SystemHolder> systems_;
 
-  synchronization::ChunkList<std::function<void(void)>, 16> add_system_cache_;
-  synchronization::ChunkList<std::function<void(void)>, 16>
-      remove_system_cache_;
+  tbb::concurrent_vector<std::function<void(void)>> add_system_cache_;
+  tbb::concurrent_vector<std::function<void(void)>> remove_system_cache_;
 };
 
 using SystemManager_t = SystemManager<ecs::EntityManager, ecs::Entity_t>;
