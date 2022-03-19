@@ -7,6 +7,7 @@ set(cpp_files
   ./source/string_manipulation/columnize.cc
   ./benchmark/benchmark_entity_component_system.h
   ./benchmark/benchmark_chunk_list.h
+  ./include/entity_component_system/entity_manager_simple.h
   ./include/entity_component_system/system_manager.h
   ./include/entity_component_system/entity_manager.h
   ./include/entity_component_system/entity.h
@@ -15,12 +16,14 @@ set(cpp_files
   ./test/test_entity_component_system.h
   ./test/test_file_system_utility.h
   ./test/test_string_manipulation.h
+  ./test/test_entity_manager_simple.h
 )
 
 source_group(include FILES
 )
 
 source_group(include/entity_component_system FILES
+  ./include/entity_component_system/entity_manager_simple.h
   ./include/entity_component_system/system_manager.h
   ./include/entity_component_system/entity_manager.h
   ./include/entity_component_system/entity.h
@@ -59,6 +62,7 @@ source_group(test FILES
   ./test/test_entity_component_system.h
   ./test/test_file_system_utility.h
   ./test/test_string_manipulation.h
+  ./test/test_entity_manager_simple.h
 )
 
 add_library(header_libraries STATIC ${cpp_files})

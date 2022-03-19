@@ -6,9 +6,9 @@
 using namespace ::testing;
 
 TEST(EntityManager, create_entity) {
-  ecs::EntityManager ent_mgr;
+  ecs::EntityManager_t ent_mgr;
 
-  ecs::SystemManager<ecs::EntityManager, ecs::Entity_t> sys_mgr;
+  ecs::SystemManager<ecs::EntityManager_t> sys_mgr;
   sys_mgr.AddSystem<TestSystem>();
   sys_mgr.SyncSystems();
   sys_mgr.Step(ent_mgr);
@@ -17,7 +17,7 @@ TEST(EntityManager, create_entity) {
 TEST(EntityManagerMock, create_entity_and_components) {
   StrictMock<ecs::EntityManagerMock> ent_mgr;
 
-  ecs::Entity<ecs::EntityManagerMock> ent(&ent_mgr);
+  ecs::Entity ent(0);
   EXPECT_CALL(ent_mgr, CreateEntity()).WillOnce(Return(ent));
 
   int int_obj{1};
@@ -61,7 +61,7 @@ TEST(EntityManagerMock, create_entity_and_components) {
   EXPECT_CALL(sys_mgr, RemoveSystem(Matcher<TestSystem>(_)));
 
   TestSystem system;
-  system.Step<ecs::MockEntity_t>(ent_mgr, sys_mgr);
+  system.Step(ent_mgr, sys_mgr);
 
   EXPECT_EQ(comps[0], 2);
   EXPECT_EQ(int_obj, 4);

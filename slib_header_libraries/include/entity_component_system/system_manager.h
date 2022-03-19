@@ -9,7 +9,7 @@
 #include "tbb_templates.hpp"
 
 namespace ecs {
-template <typename EntMgr, typename Ent>
+template <typename EntMgr>
 class SystemManager {
  public:
   void Step(EntMgr& ent_mgr) {
@@ -33,8 +33,7 @@ class SystemManager {
       std::weak_ptr<T> sys_weak = sys;
       sys_holder.system = std::any(sys);
       sys_holder.execute = [this, sys_weak](EntMgr& ent_mgr) {
-        if (auto sys = sys_weak.lock(); sys)
-          sys->template Step<Ent, EntMgr, SystemManager>(ent_mgr, *this);
+        if (auto sys = sys_weak.lock(); sys) sys->template Step(ent_mgr, *this);
       };
       sys_holder.dependencies = [sys_weak]() -> auto {
         if (auto sys = sys_weak.lock(); sys) return sys->Dependencies();
@@ -108,5 +107,4 @@ class SystemManager {
   tbb::concurrent_vector<std::function<void(void)>> remove_system_cache_;
 };
 
-using SystemManager_t = SystemManager<ecs::EntityManager, ecs::Entity_t>;
 }  // namespace ecs
