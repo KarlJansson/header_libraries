@@ -27,7 +27,8 @@ namespace ecs {
   MOCK_METHOD(void, RemoveComponent, (type, ecs::Entity&, std::uint64_t));     \
   MOCK_METHOD((RemovedComponentsHolder<type, ecs::Entity>), RemovedComponents, \
               (type));                                                         \
-  MOCK_METHOD((EntityHolder<ecs::Entity>), Entities, (type));
+  MOCK_METHOD((EntityHolder<ecs::Entity>), Entities, (type));                  \
+  MOCK_METHOD(void, RegisterType, (type));
 
 class EntityManagerMock {
  public:
@@ -136,6 +137,11 @@ class EntityManagerMock {
   template <typename T>
   EntityHolder<Entity> Entities() {
     return Entities(T{});
+  }
+
+  template <typename T>
+  void RegisterType() {
+    RegisterType(T{});
   }
 };
 

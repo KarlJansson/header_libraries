@@ -679,6 +679,10 @@ class EntityManager {
     return EntityComponents<T>(ComponentCount<T>(entity), func);
   }
 
+  template <typename T>
+  void RegisterType() {
+  }
+
  private:
   template <typename T>
   void UpdateDatastore() {
