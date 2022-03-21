@@ -7,6 +7,7 @@
 #include <typeindex>
 #include <unordered_map>
 
+#include "system_manager.h"
 #include "tbb_templates.hpp"
 
 namespace ecss {
@@ -97,6 +98,61 @@ class EntityManager {
     tbb::concurrent_vector<std::any>* content_;
   };
 
+  template <typename T>
+  class ComponentHolder {
+   public:
+    ComponentHolder(Internal<T>* content) : content_(content) {}
+    ComponentHolder& operator=(const ComponentHolder& copy) = delete;
+
+    class iterator {
+     public:
+      iterator() {}
+      iterator(typename Internal<T>::iterator it) : it_(it) {}
+
+      auto operator++() {
+        it_++;
+        return *this;
+      }
+
+      bool operator!=(const iterator& other) { return other.it_ != it_; }
+
+      auto operator*() {
+        return std::make_tuple(std::ref(it_->first), std::ref(it_->second));
+      }
+
+     private:
+      typename Internal<T>::iterator it_;
+    };
+
+    auto begin() {
+      if (content_) return iterator(std::begin(*content_));
+      return iterator();
+    }
+
+    auto end() {
+      if (content_) return iterator(std::end(*content_));
+      return iterator();
+    }
+
+    auto size() {
+      if (content_) return content_->size();
+      return size_t(0);
+    }
+
+    auto empty() {
+      if (content_) return content_->empty();
+      return true;
+    }
+
+    auto operator[](size_t i) {
+      auto& entry = (*content_)[i];
+      return std::make_tuple(std::ref(entry.first), std::ref(entry.second));
+    }
+
+   private:
+    Internal<T>* content_;
+  };
+
   EntityManager() {}
 
   Ent CreateEntity() { return Ent(0); }
@@ -105,7 +161,8 @@ class EntityManager {
 
   template <typename T>
   T& AddComponent() {
-    auto it = data_stores_.find(typeid(T));
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
     auto& data_store = std::any_cast<Internal<T>&>(it->second);
     auto element = data_store.emplace_back();
     return element->first;
@@ -113,7 +170,8 @@ class EntityManager {
 
   template <typename T>
   T* Component() {
-    auto it = data_stores_.find(typeid(T));
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
     auto& data_store = std::any_cast<Internal<T>&>(it->second);
     if (data_store.empty()) return nullptr;
     return &data_store[0].first;
@@ -131,7 +189,8 @@ class EntityManager {
 
   template <typename T>
   T& AddComponent(Ent& entity) {
-    auto it = data_stores_.find(typeid(T));
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
     auto& data_store = std::any_cast<Internal<T>&>(it->second);
     auto element = data_store.emplace_back(T{}, entity);
     auto& loc_map = (*entity.template loc_)[typeid(T).hash_code()];
@@ -140,7 +199,7 @@ class EntityManager {
   }
 
   template <typename T>
-  T* Component(Ent& entity, std::uint64_t sub_loc = 0) {
+  T* Component(const Ent& entity, std::uint64_t sub_loc = 0) {
     auto ent_it = entity.template loc_->find(typeid(T).hash_code());
     if (ent_it == entity.template loc_->end()) return nullptr;
     auto it = std::any_cast<T*>(ent_it->second[sub_loc]);
@@ -148,34 +207,35 @@ class EntityManager {
   }
 
   template <typename T>
-  const T* ComponentR(Ent& entity, std::uint64_t sub_loc = 0) {
+  const T* ComponentR(const Ent& entity, std::uint64_t sub_loc = 0) {
     return Component<T>(entity, sub_loc);
   }
 
   template <typename T>
-  T* ComponentW(Ent& entity, std::uint64_t sub_loc = 0) {
+  T* ComponentW(const Ent& entity, std::uint64_t sub_loc = 0) {
     return Component<T>(entity, sub_loc);
   }
 
   template <typename T>
-  Internal<T>& Components() {
-    auto it = data_stores_.find(typeid(T));
+  ComponentHolder<T> Components() {
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
     auto& data_store = std::any_cast<Internal<T>&>(it->second);
-    return data_store;
+    return ComponentHolder<T>(&data_store);
   }
 
   template <typename T>
-  Internal<T>& ComponentsR() {
+  ComponentHolder<T> ComponentsR() {
     return Components<T>();
   }
 
   template <typename T>
-  Internal<T>& ComponentsW() {
+  ComponentHolder<T> ComponentsW() {
     return Components<T>();
   }
 
   template <typename T>
-  EntityComponents<T> Components(Ent& entity) {
+  EntityComponents<T> Components(const Ent& entity) {
     auto ent_it = entity.template loc_->find(typeid(T).hash_code());
     if (ent_it == entity.template loc_->end())
       return EntityComponents<T>(nullptr);
@@ -183,23 +243,20 @@ class EntityManager {
   }
 
   template <typename T>
-  EntityComponents<T> ComponentsR(Ent& entity) {
+  EntityComponents<T> ComponentsR(const Ent& entity) {
     return Components<T>(entity);
   }
 
   template <typename T>
-  EntityComponents<T> ComponentsW(Ent& entity) {
+  EntityComponents<T> ComponentsW(const Ent& entity) {
     return Components<T>(entity);
-  }
-
-  template <typename T>
-  void RegisterType() {
-    data_stores_[typeid(T)] = std::any(Internal<T>());
   }
 
  private:
-  std::unordered_map<std::type_index, std::any> data_stores_;
+  tbb::concurrent_unordered_map<size_t, std::any> data_stores_;
 };
 
+using Entity_t = Entity;
 using EntityManager_t = ecss::EntityManager<ecss::Entity>;
+using SystemManager_t = ecs::SystemManager<EntityManager_t>;
 }  // namespace ecss

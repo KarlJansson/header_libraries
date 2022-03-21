@@ -3,7 +3,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "entity.h"
 #include "entity_manager.h"
 
 namespace ecs {
@@ -27,8 +26,7 @@ namespace ecs {
   MOCK_METHOD(void, RemoveComponent, (type, ecs::Entity&, std::uint64_t));     \
   MOCK_METHOD((RemovedComponentsHolder<type, ecs::Entity>), RemovedComponents, \
               (type));                                                         \
-  MOCK_METHOD((EntityHolder<ecs::Entity>), Entities, (type));                  \
-  MOCK_METHOD(void, RegisterType, (type));
+  MOCK_METHOD((EntityHolder<ecs::Entity>), Entities, (type));
 
 class EntityManagerMock {
  public:
@@ -138,12 +136,6 @@ class EntityManagerMock {
   EntityHolder<Entity> Entities() {
     return Entities(T{});
   }
-
-  template <typename T>
-  void RegisterType() {
-    RegisterType(T{});
-  }
 };
 
-using MockEntity_t = Entity;
 }  // namespace ecs

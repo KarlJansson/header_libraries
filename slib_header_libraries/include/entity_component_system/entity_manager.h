@@ -13,9 +13,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "chunk_list.hpp"
-#include "entity.h"
 #include "tbb_templates.hpp"
+#include "system_manager.h"
 
 namespace ecs {
 template <typename T>
@@ -656,7 +655,7 @@ class EntityManager {
   }
 
   template <typename T>
-  std::uint64_t ComponentCount(Ent& entity) const {
+  std::uint64_t ComponentCount(const Ent& entity) const {
     if (auto it = entity.template loc_map_->find(typeid(T));
         it != std::end(*entity.template loc_map_))
       return it->second.size();
@@ -664,7 +663,7 @@ class EntityManager {
   }
 
   template <typename T>
-  EntityComponents<const T> ComponentsR(Ent& entity) {
+  EntityComponents<const T> ComponentsR(const Ent& entity) {
     auto func = [this, entity](size_t sub_loc) -> auto {
       return ComponentR<T>(entity, sub_loc);
     };
@@ -677,10 +676,6 @@ class EntityManager {
       return ComponentW<T>(entity, sub_loc);
     };
     return EntityComponents<T>(ComponentCount<T>(entity), func);
-  }
-
-  template <typename T>
-  void RegisterType() {
   }
 
  private:
@@ -749,4 +744,5 @@ class EntityManager {
 
 using Entity_t = Entity;
 using EntityManager_t = EntityManager<Entity_t>;
+using SystemManager_t = SystemManager<EntityManager_t>;
 }  // namespace ecs

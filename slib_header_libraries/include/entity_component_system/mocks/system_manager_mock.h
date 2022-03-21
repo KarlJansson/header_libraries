@@ -1,6 +1,6 @@
 #pragma once
 
-#include "entity.h"
+#include "ecs_macros.h"
 
 class TestSystem {
  public:
