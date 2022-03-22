@@ -7,12 +7,12 @@
 #include <unordered_map>
 #include <vector>
 
-#define ent_add_component(e, t) ent_mgr.template AddComponent<t>(e)
-#define ent_component_w(e, t) ent_mgr.template ComponentW<t>(e)
-#define ent_component_r(e, t) ent_mgr.template ComponentR<t>(e)
-#define ent_components_r(e, t) ent_mgr.template ComponentsR<t>(e)
-#define ent_components_w(e, t) ent_mgr.template ComponentsW<t>(e)
-#define ent_remove_component(e, t) ent_mgr.template RemoveComponent<t>(e)
+#define ent_add_component(t, e) ent_mgr.template AddComponent<t>(e)
+#define ent_component_w(t, e) ent_mgr.template ComponentW<t>(e)
+#define ent_component_r(t, e) ent_mgr.template ComponentR<t>(e)
+#define ent_components_r(t, e) ent_mgr.template ComponentsR<t>(e)
+#define ent_components_w(t, e) ent_mgr.template ComponentsW<t>(e)
+#define ent_remove_component(t, e) ent_mgr.template RemoveComponent<t>(e)
 
 #define emgr_add_component(t) ent_mgr.template AddComponent<t>()
 #define emgr_remove_component(t) ent_mgr.template RemoveComponent<t>()

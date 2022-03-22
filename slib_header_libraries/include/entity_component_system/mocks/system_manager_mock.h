@@ -8,23 +8,23 @@ class TestSystem {
     auto ent = ent_mgr.CreateEntity();
 
     {
-      auto& comp = ent_add_component(ent, int);
+      auto& comp = ent_add_component(int, ent);
       comp += 1;
     }
 
-    if (auto comp = ent_component_w(ent, int); comp) *comp += 1;
+    if (auto comp = ent_component_w(int, ent); comp) *comp += 1;
 
-    auto comp = ent_add_component(ent, double);
-    auto comp_2 = ent_component_r(ent, double);
+    auto comp = ent_add_component(double, ent);
+    auto comp_2 = ent_component_r(double, ent);
 
-    for (auto& c : ent_components_r(ent, int)) {
+    for (auto& c : ent_components_r(int, ent)) {
     }
-    for (auto& c : ent_components_w(ent, int)) c += 1;
+    for (auto& c : ent_components_w(int, ent)) c += 1;
 
-    ent_remove_component(ent, int);
-    ent_remove_component(ent, double);
+    ent_remove_component(int, ent);
+    ent_remove_component(double, ent);
 
-    for (auto& c : ent_components_w(ent, int)) c += 1;
+    for (auto& c : ent_components_w(int, ent)) c += 1;
     for (const auto& [c, ent] : emgr_added_components_w(int)) c += 1;
     for (const auto& [c, ent] : emgr_added_components_r(int)) {
     }
