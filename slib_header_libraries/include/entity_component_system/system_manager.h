@@ -33,7 +33,7 @@ class SystemManager {
       std::weak_ptr<T> sys_weak = sys;
       sys_holder.system = std::any(sys);
       sys_holder.execute = [this, sys_weak](EntMgr& ent_mgr) {
-        if (auto sys = sys_weak.lock(); sys) sys->template Step(ent_mgr, *this);
+        if (auto sys = sys_weak.lock(); sys) sys->Step(ent_mgr, *this);
       };
       sys_holder.dependencies = [sys_weak]() -> auto {
         if (auto sys = sys_weak.lock(); sys) return sys->Dependencies();

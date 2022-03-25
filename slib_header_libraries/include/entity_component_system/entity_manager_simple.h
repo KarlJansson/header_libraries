@@ -252,6 +252,12 @@ class EntityManager {
     return Components<T>(entity);
   }
 
+  template <typename T>
+  void RemoveComponent() {}
+
+  template <typename T>
+  void RemoveComponent(const Ent& entity) {}
+
  private:
   tbb::concurrent_unordered_map<size_t, std::any> data_stores_;
 };

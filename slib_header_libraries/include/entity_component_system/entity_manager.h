@@ -388,7 +388,6 @@ class UpdatedComponents {
   std::vector<size_t>* indices;
 };
 
-template <typename Ent>
 class EntityManager {
  public:
   EntityManager() {}
@@ -468,93 +467,93 @@ class EntityManager {
   }
 
   template <typename T>
-  ConstComponents<T, Ent> ComponentsR() const {
+  ConstComponents<T, Entity> ComponentsR() const {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return ConstComponents<T, Ent>(
+      return ConstComponents<T, Entity>(
           &ds->components[write_buffer_id_ == 0 ? 1 : 0], &ds->entities);
     }
-    return ConstComponents<T, Ent>(nullptr, nullptr);
+    return ConstComponents<T, Entity>(nullptr, nullptr);
   }
 
   template <typename T>
-  Components<T, Ent> ComponentsW() {
+  Components<T, Entity> ComponentsW() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return Components<T, Ent>(&ds->components[write_buffer_id_],
+      return Components<T, Entity>(&ds->components[write_buffer_id_],
                                 &ds->entities);
     }
-    return Components<T, Ent>(nullptr, nullptr);
+    return Components<T, Entity>(nullptr, nullptr);
   }
 
   template <typename T>
-  UpdatedComponents<const std::vector<T>*, Ent> UpdatedComponentsR() {
+  UpdatedComponents<const std::vector<T>*, Entity> UpdatedComponentsR() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return UpdatedComponents<const std::vector<T>*, Ent>(
+      return UpdatedComponents<const std::vector<T>*, Entity>(
           &ds->components[write_buffer_id_], &ds->entities,
           &ds->updated_components);
     }
-    return UpdatedComponents<const std::vector<T>*, Ent>(nullptr, nullptr,
+    return UpdatedComponents<const std::vector<T>*, Entity>(nullptr, nullptr,
                                                          nullptr);
   }
 
   template <typename T>
-  UpdatedComponents<std::vector<T>*, Ent> UpdatedComponentsW() {
+  UpdatedComponents<std::vector<T>*, Entity> UpdatedComponentsW() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return UpdatedComponents<std::vector<T>*, Ent>(
+      return UpdatedComponents<std::vector<T>*, Entity>(
           &ds->components[write_buffer_id_], &ds->entities,
           &ds->updated_components);
     }
-    return UpdatedComponents<std::vector<T>*, Ent>(nullptr, nullptr, nullptr);
+    return UpdatedComponents<std::vector<T>*, Entity>(nullptr, nullptr, nullptr);
   }
 
   template <typename T>
-  UpdatedComponents<const std::vector<T>*, Ent> AddedComponentsR() {
+  UpdatedComponents<const std::vector<T>*, Entity> AddedComponentsR() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return UpdatedComponents<const std::vector<T>*, Ent>(
+      return UpdatedComponents<const std::vector<T>*, Entity>(
           &ds->components[write_buffer_id_], &ds->entities,
           &ds->added_components);
     }
-    return UpdatedComponents<const std::vector<T>*, Ent>(nullptr, nullptr,
+    return UpdatedComponents<const std::vector<T>*, Entity>(nullptr, nullptr,
                                                          nullptr);
   }
 
   template <typename T>
-  UpdatedComponents<std::vector<T>*, Ent> AddedComponentsW() {
+  UpdatedComponents<std::vector<T>*, Entity> AddedComponentsW() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return UpdatedComponents<std::vector<T>*, Ent>(
+      return UpdatedComponents<std::vector<T>*, Entity>(
           &ds->components[write_buffer_id_], &ds->entities,
           &ds->added_components);
     }
-    return UpdatedComponents<std::vector<T>*, Ent>(nullptr, nullptr, nullptr);
+    return UpdatedComponents<std::vector<T>*, Entity>(nullptr, nullptr, nullptr);
   }
 
   template <typename T>
-  RemovedComponentsHolder<T, Ent> RemovedComponents() {
+  RemovedComponentsHolder<T, Entity> RemovedComponents() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return RemovedComponentsHolder<T, Ent>(
+      return RemovedComponentsHolder<T, Entity>(
           &ds->components[write_buffer_id_ == 0 ? 1 : 0], &ds->entities,
           &ds->removed_components);
     }
-    return RemovedComponentsHolder<T, Ent>(nullptr, nullptr, nullptr);
+    return RemovedComponentsHolder<T, Entity>(nullptr, nullptr, nullptr);
   }
 
   template <typename T>
-  EntityHolder<Ent> Entities() {
+  EntityHolder<Entity> Entities() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
-      return EntityHolder<Ent>(&ds->entities);
+      return EntityHolder<Entity>(&ds->entities);
     }
-    return EntityHolder<Ent>(nullptr);
+    return EntityHolder<Entity>(nullptr);
   }
 
   template <typename T>
-  T& AddComponent(Ent& entity) {
+  T& AddComponent(Entity& entity) {
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_back([this, ptr, entity]() {
       auto it = data_stores_.find(typeid(T));
@@ -586,10 +585,10 @@ class EntityManager {
   }
 
   template <typename T>
-  void RemoveComponent(Ent& entity, std::uint64_t sub_loc = 0) {
+  void RemoveComponent(Entity& entity, std::uint64_t sub_loc = 0) {
     remove_component_cache_.push_back(std::make_pair(
         [this, entity, sub_loc]() {
-          auto ent_loc = entity.template Loc<T>(sub_loc);
+          auto ent_loc = entity.Loc<T>(sub_loc);
           if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return;
 
           auto& loc_map = (*entity.loc_map_)[typeid(T)];
@@ -620,7 +619,7 @@ class EntityManager {
         [this, entity, sub_loc]() {
           if (auto ds_it = data_stores_.find(typeid(T));
               ds_it != std::end(data_stores_)) {
-            auto ent_loc = entity.template Loc<T>(sub_loc);
+            auto ent_loc = entity.Loc<T>(sub_loc);
             if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return;
 
             auto data_store =
@@ -631,9 +630,9 @@ class EntityManager {
   }
 
   template <typename T>
-  const T* ComponentR(const Ent& entity, std::uint64_t sub_loc = 0) {
+  const T* ComponentR(const Entity& entity, std::uint64_t sub_loc = 0) {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
-      auto ent_loc = entity.template Loc<T>(sub_loc);
+      auto ent_loc = entity.Loc<T>(sub_loc);
       if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return nullptr;
       return &std::any_cast<std::shared_ptr<DataStore<T>>>(it->second)
                   ->components[write_buffer_id_ == 0 ? 1 : 0][ent_loc];
@@ -642,9 +641,9 @@ class EntityManager {
   }
 
   template <typename T>
-  T* ComponentW(const Ent& entity, std::uint64_t sub_loc = 0) {
+  T* ComponentW(const Entity& entity, std::uint64_t sub_loc = 0) {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
-      auto ent_loc = entity.template Loc<T>(sub_loc);
+      auto ent_loc = entity.Loc<T>(sub_loc);
       if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return nullptr;
       auto data_store =
           std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -655,15 +654,15 @@ class EntityManager {
   }
 
   template <typename T>
-  std::uint64_t ComponentCount(const Ent& entity) const {
-    if (auto it = entity.template loc_map_->find(typeid(T));
-        it != std::end(*entity.template loc_map_))
+  std::uint64_t ComponentCount(const Entity& entity) const {
+    if (auto it = entity.loc_map_->find(typeid(T));
+        it != std::end(*entity.loc_map_))
       return it->second.size();
     return std::uint64_t(0);
   }
 
   template <typename T>
-  EntityComponents<const T> ComponentsR(const Ent& entity) {
+  EntityComponents<const T> ComponentsR(const Entity& entity) {
     auto func = [this, entity](size_t sub_loc) -> auto {
       return ComponentR<T>(entity, sub_loc);
     };
@@ -671,7 +670,7 @@ class EntityManager {
   }
 
   template <typename T>
-  EntityComponents<T> ComponentsW(Ent& entity) {
+  EntityComponents<T> ComponentsW(Entity& entity) {
     auto func = [this, entity](size_t sub_loc) -> auto {
       return ComponentW<T>(entity, sub_loc);
     };
@@ -718,7 +717,7 @@ class EntityManager {
     }
 
     std::vector<T> components[2];
-    std::vector<Ent> entities;
+    std::vector<Entity> entities;
 
     tbb::concurrent_unordered_set<size_t> dirty_components;
     std::vector<size_t> removed_components;
@@ -743,6 +742,6 @@ class EntityManager {
 };
 
 using Entity_t = Entity;
-using EntityManager_t = EntityManager<Entity_t>;
+using EntityManager_t = EntityManager;
 using SystemManager_t = SystemManager<EntityManager_t>;
 }  // namespace ecs
