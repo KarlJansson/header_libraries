@@ -8,11 +8,25 @@
 #include "chunk_list.hpp"
 #include "tbb_templates.hpp"
 
+#ifdef UNIT_TEST
+#include "system_manager_mock.h"
+#endif
+
 namespace ecs {
 template <typename EntMgr>
 class SystemManager {
  public:
+  SystemManager() = default;
+
+#ifdef UNIT_TEST
+  SystemManager(SystemManagerMock* mock) : mock_(mock) {}
+  SystemManagerMock* mock_{nullptr};
+#endif
+
   void Step(EntMgr& ent_mgr) {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->Step(ent_mgr);
+#endif
     for (auto& execution_group : execution_order_)
       tbb_templates::parallel_for(execution_group, [&](size_t i) {
         execution_group[i]->execute(ent_mgr);
@@ -27,6 +41,9 @@ class SystemManager {
 
   template <typename T>
   void AddSystem() {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->AddSystem(typeid(T));
+#endif
     add_system_cache_.push_back([this]() {
       SystemHolder sys_holder;
       auto sys = std::make_shared<T>();
@@ -46,17 +63,26 @@ class SystemManager {
 
   template <typename T>
   void RemoveSystem() {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->RemoveSystem(typeid(T));
+#endif
     remove_system_cache_.push_back([this]() { systems_.erase(typeid(T)); });
   }
 
   template <typename T>
   T* System() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<T*>(mock_->System(typeid(T)));
+#endif
     if (auto it = systems_.find(typeid(T)); it != std::end(systems_))
       return std::any_cast<std::shared_ptr<T>>(it->second.system).get();
     return nullptr;
   }
 
   void SyncSystems() {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->SyncSystems();
+#endif
     for (auto& sys : add_system_cache_) sys();
     for (auto& sys : remove_system_cache_) sys();
 

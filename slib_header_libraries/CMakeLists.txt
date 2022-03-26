@@ -8,9 +8,9 @@ set(cpp_files
   ./benchmark/benchmark_entity_component_system.h
   ./benchmark/benchmark_chunk_list.h
   ./include/entity_component_system/entity_manager_simple.h
-  ./include/entity_component_system/ecs_macros.h
   ./include/entity_component_system/system_manager.h
   ./include/entity_component_system/entity_manager.h
+  ./include/entity_component_system/entity.h
   ./include/entity_component_system/mocks/system_manager_mock.h
   ./include/entity_component_system/mocks/entity_manager_mock.h
   ./test/test_entity_component_system.h
@@ -24,9 +24,9 @@ source_group(include FILES
 
 source_group(include/entity_component_system FILES
   ./include/entity_component_system/entity_manager_simple.h
-  ./include/entity_component_system/ecs_macros.h
   ./include/entity_component_system/system_manager.h
   ./include/entity_component_system/entity_manager.h
+  ./include/entity_component_system/entity.h
 )
 
 source_group(include/entity_component_system/mocks FILES

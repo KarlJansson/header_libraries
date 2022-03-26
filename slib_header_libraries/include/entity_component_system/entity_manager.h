@@ -13,41 +13,17 @@
 #include <unordered_set>
 #include <vector>
 
+#include "entity.h"
 #include "tbb_templates.hpp"
 #include "system_manager.h"
+
+#ifdef UNIT_TEST
+#include "entity_manager_mock.h"
+#endif
 
 namespace ecs {
 template <typename T>
 using dsm = std::unordered_map<std::type_index, T>;
-
-class Entity {
- public:
-  Entity() : loc_map_(nullptr) {}
-  Entity(int) : loc_map_(std::make_shared<dsm<std::vector<std::uint64_t>>>()) {}
-
-  bool operator<(const Entity& other) const {
-    return loc_map_.get() < other.loc_map_.get();
-  };
-  bool operator>(const Entity& other) const {
-    return loc_map_.get() > other.loc_map_.get();
-  };
-  bool operator==(const Entity& other) const {
-    return loc_map_.get() == other.loc_map_.get();
-  };
-  bool operator!=(const Entity& other) const {
-    return loc_map_.get() != other.loc_map_.get();
-  };
-
-  template <typename T>
-  std::uint64_t Loc(std::uint64_t sub_loc = 0) const {
-    if (auto it = loc_map_->find(typeid(T));
-        it != std::end(*loc_map_) && it->second.size() > sub_loc)
-      return std::get<std::vector<std::uint64_t>>(*it)[sub_loc];
-    return std::numeric_limits<std::uint64_t>::max();
-  }
-
-  std::shared_ptr<dsm<std::vector<std::uint64_t>>> loc_map_;
-};
 
 template <typename T>
 class EntityComponents {
@@ -169,7 +145,7 @@ class EntityHolder {
 
     bool operator!=(const iterator& other) { return other.entity != entity; }
 
-    auto operator*() { return *entity; }
+    auto& operator*() { return *entity; }
 
    private:
     Ent* entity;
@@ -390,11 +366,25 @@ class UpdatedComponents {
 
 class EntityManager {
  public:
+  #ifdef UNIT_TEST
+  EntityManager(EntityManagerMock* mock) : mock_(mock) {}
+  EntityManagerMock* mock_;
+  #endif
+
   EntityManager() {}
 
-  Entity CreateEntity() { return Entity(0); }
+  Entity CreateEntity() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<Entity>(mock_->CreateEntity());
+#endif
+    return Entity(0);
+  }
 
   void SyncSwap() {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->SyncSwap();
+#endif
+
     if (data_store_updates_.size() < 20)
       for (auto& f : data_store_updates_) f();
     else
@@ -420,6 +410,9 @@ class EntityManager {
 
   template <typename T>
   T& AddComponent() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<T&>(mock_->AddComponent(typeid(T)));
+#endif
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_back([this, ptr]() {
       auto it = data_stores_.find(typeid(T));
@@ -449,6 +442,9 @@ class EntityManager {
 
   template <typename T>
   const T* ComponentR() const {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->ComponentR(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_))
       return &std::any_cast<std::shared_ptr<DataStore<T>>>(it->second)
                   ->components[write_buffer_id_ == 0 ? 1 : 0][0];
@@ -457,6 +453,9 @@ class EntityManager {
 
   template <typename T>
   T* ComponentW() {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->ComponentW(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto data_store =
           std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -468,6 +467,9 @@ class EntityManager {
 
   template <typename T>
   ConstComponents<T, Entity> ComponentsR() const {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<ConstComponents<T, Entity>>(mock_->ComponentsR(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return ConstComponents<T, Entity>(
@@ -478,6 +480,9 @@ class EntityManager {
 
   template <typename T>
   Components<T, Entity> ComponentsW() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<Components<T, Entity>>(mock_->ComponentsW(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return Components<T, Entity>(&ds->components[write_buffer_id_],
@@ -488,6 +493,9 @@ class EntityManager {
 
   template <typename T>
   UpdatedComponents<const std::vector<T>*, Entity> UpdatedComponentsR() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<UpdatedComponents<const std::vector<T>*, Entity>>(mock_->UpdatedComponentsR(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return UpdatedComponents<const std::vector<T>*, Entity>(
@@ -500,6 +508,9 @@ class EntityManager {
 
   template <typename T>
   UpdatedComponents<std::vector<T>*, Entity> UpdatedComponentsW() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<UpdatedComponents<std::vector<T>*, Entity>>(mock_->UpdatedComponentsW(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return UpdatedComponents<std::vector<T>*, Entity>(
@@ -511,6 +522,9 @@ class EntityManager {
 
   template <typename T>
   UpdatedComponents<const std::vector<T>*, Entity> AddedComponentsR() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<UpdatedComponents<const std::vector<T>*, Entity>>(mock_->AddedComponentsR(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return UpdatedComponents<const std::vector<T>*, Entity>(
@@ -523,6 +537,9 @@ class EntityManager {
 
   template <typename T>
   UpdatedComponents<std::vector<T>*, Entity> AddedComponentsW() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<UpdatedComponents<std::vector<T>*, Entity>>(mock_->AddedComponentsW(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return UpdatedComponents<std::vector<T>*, Entity>(
@@ -534,6 +551,9 @@ class EntityManager {
 
   template <typename T>
   RemovedComponentsHolder<T, Entity> RemovedComponents() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<RemovedComponentsHolder<T, Entity>>(mock_->RemovedComponents(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return RemovedComponentsHolder<T, Entity>(
@@ -545,6 +565,9 @@ class EntityManager {
 
   template <typename T>
   EntityHolder<Entity> Entities() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<EntityHolder<Entity>>(mock_->Entities(typeid(T)));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return EntityHolder<Entity>(&ds->entities);
@@ -554,6 +577,9 @@ class EntityManager {
 
   template <typename T>
   T& AddComponent(Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<T&>(mock_->AddComponent(typeid(T),entity));
+#endif
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_back([this, ptr, entity]() {
       auto it = data_stores_.find(typeid(T));
@@ -586,6 +612,9 @@ class EntityManager {
 
   template <typename T>
   void RemoveComponent(Entity& entity, std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->RemoveComponent(typeid(T),entity,sub_loc);
+#endif
     remove_component_cache_.push_back(std::make_pair(
         [this, entity, sub_loc]() {
           auto ent_loc = entity.Loc<T>(sub_loc);
@@ -631,6 +660,9 @@ class EntityManager {
 
   template <typename T>
   const T* ComponentR(const Entity& entity, std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->ComponentR(typeid(T),entity,sub_loc));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ent_loc = entity.Loc<T>(sub_loc);
       if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return nullptr;
@@ -642,6 +674,9 @@ class EntityManager {
 
   template <typename T>
   T* ComponentW(const Entity& entity, std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->ComponentW(typeid(T),entity,sub_loc));
+#endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ent_loc = entity.Loc<T>(sub_loc);
       if (ent_loc == std::numeric_limits<std::uint64_t>::max()) return nullptr;
@@ -653,16 +688,12 @@ class EntityManager {
     return nullptr;
   }
 
-  template <typename T>
-  std::uint64_t ComponentCount(const Entity& entity) const {
-    if (auto it = entity.loc_map_->find(typeid(T));
-        it != std::end(*entity.loc_map_))
-      return it->second.size();
-    return std::uint64_t(0);
-  }
 
   template <typename T>
   EntityComponents<const T> ComponentsR(const Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<EntityComponents<const T>>(mock_->ComponentsR(typeid(T),entity));
+#endif
     auto func = [this, entity](size_t sub_loc) -> auto {
       return ComponentR<T>(entity, sub_loc);
     };
@@ -671,6 +702,9 @@ class EntityManager {
 
   template <typename T>
   EntityComponents<T> ComponentsW(Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<EntityComponents<T>>(mock_->ComponentsW(typeid(T),entity));
+#endif
     auto func = [this, entity](size_t sub_loc) -> auto {
       return ComponentW<T>(entity, sub_loc);
     };
@@ -678,6 +712,14 @@ class EntityManager {
   }
 
  private:
+  template <typename T>
+  std::uint64_t ComponentCount(const Entity& entity) const {
+    if (auto it = entity.loc_map_->find(typeid(T));
+        it != std::end(*entity.loc_map_))
+      return it->second.size();
+    return std::uint64_t(0);
+  }
+
   template <typename T>
   void UpdateDatastore() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {

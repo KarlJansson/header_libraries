@@ -1,79 +1,12 @@
 #pragma once
 
-#include "ecs_macros.h"
-
-class TestSystem {
- public:
-  system_step() {
-    auto ent = ent_mgr.CreateEntity();
-
-    {
-      auto& comp = ent_add_component(int, ent);
-      comp += 1;
-    }
-
-    if (auto comp = ent_component_w(int, ent); comp) *comp += 1;
-
-    auto comp = ent_add_component(double, ent);
-    auto comp_2 = ent_component_r(double, ent);
-
-    for (auto& c : ent_components_r(int, ent)) {
-    }
-    for (auto& c : ent_components_w(int, ent)) c += 1;
-
-    ent_remove_component(int, ent);
-    ent_remove_component(double, ent);
-
-    for (auto& c : ent_components_w(int, ent)) c += 1;
-    for (const auto& [c, ent] : emgr_added_components_w(int)) c += 1;
-    for (const auto& [c, ent] : emgr_added_components_r(int)) {
-    }
-
-    for (const auto& [c, ent] : emgr_updated_components_w(int)) c += 1;
-    for (const auto& [c, ent] : emgr_updated_components_r(int)) {
-    }
-
-    for (const auto& [c, ent] : emgr_removed_components(int)) {
-    }
-
-    for (const auto& ent : emgr_entities(int)) {
-    }
-
-    smgr_remove_system(TestSystem);
-    smgr_add_system(TestSystem);
-  }
-
-  void Init() {}
-  std::vector<std::type_index> Dependencies() { return {}; }
-};
-
 namespace ecs {
-#define REGISTER_SYSTEM_TYPE(type)         \
-  MOCK_METHOD(void, AddSystem, (type));    \
-  MOCK_METHOD(void, RemoveSystem, (type)); \
-  MOCK_METHOD(type*, System, (type));
-
-template <typename Ent, typename EntMgr>
 class SystemManagerMock {
  public:
-  REGISTER_SYSTEM_TYPE(TestSystem);
-
-  MOCK_METHOD(void, Step, (EntMgr&));
+  MOCK_METHOD(void, Step, (class EntityManager&));
   MOCK_METHOD(void, SyncSystems, ());
-
-  template <typename T>
-  void AddSystem() {
-    AddSystem(T{});
-  }
-
-  template <typename T>
-  void RemoveSystem() {
-    RemoveSystem(T{});
-  }
-
-  template <typename T>
-  T* System() {
-    return System(T{});
-  }
+  MOCK_METHOD(void, AddSystem, (const std::type_index));
+  MOCK_METHOD(void, RemoveSystem, (const std::type_index));
+  MOCK_METHOD(std::any&, System, (const std::type_index));
 };
 }  // namespace ecs
