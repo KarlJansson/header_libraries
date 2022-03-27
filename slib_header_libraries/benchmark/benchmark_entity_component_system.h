@@ -1,5 +1,4 @@
 #include "entity_manager.h"
-#include "entity_manager_simple.h"
 #include "system_manager.h"
 
 void BM_create_remove_entity(benchmark::State& state) {

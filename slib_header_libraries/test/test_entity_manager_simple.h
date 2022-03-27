@@ -1,4 +1,4 @@
-#include "entity_manager_simple.h"
+#include "entity_manager.h"
 #include "tbb_templates.hpp"
 
 TEST(EntityManagerSimple, create_entity) {

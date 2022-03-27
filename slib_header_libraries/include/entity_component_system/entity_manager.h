@@ -14,362 +14,24 @@
 #include <vector>
 
 #include "entity.h"
-#include "tbb_templates.hpp"
+#include "entity_manager_util.h"
 #include "system_manager.h"
+#include "tbb_templates.hpp"
 
 #ifdef UNIT_TEST
 #include "entity_manager_mock.h"
 #endif
 
 namespace ecs {
-template <typename T>
-using dsm = std::unordered_map<std::type_index, T>;
-
-template <typename T>
-class EntityComponents {
- public:
-  EntityComponents(size_t size, std::function<T*(size_t)> func)
-      : size_(size), func(func) {}
-  EntityComponents& operator=(const EntityComponents& copy) = delete;
-
-  class iterator {
-   public:
-    iterator(size_t sub_loc, std::function<T*(size_t)> func)
-        : sub_loc(sub_loc), func(func) {}
-
-    auto operator++() {
-      ++sub_loc;
-      return *this;
-    }
-    bool operator!=(const iterator& other) { return other.sub_loc != sub_loc; }
-    auto& operator*() { return *func(sub_loc); }
-
-   private:
-    size_t sub_loc;
-    std::function<T*(size_t)> func;
-  };
-
-  auto begin() { return iterator(0, func); }
-  auto end() { return iterator(size_, func); }
-
-  auto size() { return size_; }
-  auto empty() { return size_ == 0; }
-
-  auto operator[](size_t i) { return *func(i); }
-
- private:
-  size_t size_;
-  std::function<T*(size_t)> func;
-};
-
-template <typename T, typename Ent>
-class RemovedComponentsHolder {
- public:
-  RemovedComponentsHolder(const std::vector<T>* comps, std::vector<Ent>* ents,
-                          std::vector<size_t>* comp_locs)
-      : components(comps), entities(ents), component_locs(comp_locs) {}
-  RemovedComponentsHolder& operator=(const RemovedComponentsHolder& copy) =
-      delete;
-
-  template <typename T1>
-  class iterator {
-   public:
-    iterator(T1 comps, std::vector<Ent>* ents, size_t* loc)
-        : components(comps), entities(ents), loc(loc) {}
-
-    auto operator++() {
-      loc++;
-      return *this;
-    }
-
-    bool operator!=(const iterator& other) { return other.loc != loc; }
-
-    auto operator*() {
-      return std::make_tuple(std::ref(components[*loc]),
-                             std::ref(entities[*loc]));
-    }
-
-   private:
-    T1 components;
-    std::vector<Ent>* entities;
-    size_t* loc;
-  };
-
-  auto begin() {
-    if (components)
-      return iterator(components, entities, component_locs->data());
-    return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
-  }
-
-  auto end() {
-    if (components)
-      return iterator(components, entities,
-                      component_locs->data() + component_locs->size());
-    return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
-  }
-
-  auto size() {
-    if (component_locs) return component_locs->size();
-    return std::size_t(0);
-  }
-
-  auto empty() {
-    if (component_locs) return component_locs->size() == 0;
-    return true;
-  }
-
-  auto operator[](size_t i) {
-    return std::make_tuple(std::ref(components[(*component_locs)[i]]),
-                           std::ref(entities[(*component_locs)[i]]));
-  }
-
-  const std::vector<T>* components;
-  std::vector<Ent>* entities;
-  std::vector<size_t>* component_locs;
-};
-
-template <typename Ent>
-class EntityHolder {
- public:
-  EntityHolder(std::vector<Ent>* ents) : entities(ents) {}
-  EntityHolder& operator=(const EntityHolder& copy) = delete;
-
-  class iterator {
-   public:
-    iterator(Ent* ent) : entity(ent) {}
-
-    auto operator++() {
-      ++entity;
-      return *this;
-    }
-
-    bool operator!=(const iterator& other) { return other.entity != entity; }
-
-    auto& operator*() { return *entity; }
-
-   private:
-    Ent* entity;
-  };
-
-  auto begin() {
-    if (entities) return iterator(entities->data());
-    return iterator(nullptr);
-  }
-
-  auto end() {
-    if (entities) return iterator(entities->data() + entities->size());
-    return iterator(nullptr);
-  }
-
-  auto size() {
-    if (entities) return entities->size();
-    return std::size_t(0);
-  }
-
-  auto empty() {
-    if (entities) return entities->size() == 0;
-    return true;
-  }
-
-  auto operator[](size_t i) { return (*entities)[i]; }
-
-  std::vector<Ent>* entities{nullptr};
-};
-
-template <typename T, typename Ent>
-class Components {
- public:
-  Components(std::vector<T>* comps, std::vector<Ent>* ents)
-      : components(comps), entities(ents) {}
-  Components& operator=(const Components& copy) = delete;
-
-  template <typename T1, typename T2>
-  class iterator {
-   public:
-    iterator(T1* comp, T2* ent) : component(comp), entity(ent) {}
-
-    auto operator++() {
-      ++component;
-      ++entity;
-      return *this;
-    }
-    bool operator!=(const iterator& other) {
-      return other.component != component;
-    }
-    auto operator*() {
-      return std::make_tuple(std::ref(*component), std::ref(*entity));
-    }
-
-   private:
-    T1* component;
-    T2* entity;
-  };
-
-  auto begin() {
-    if (components) return iterator(components->data(), entities->data());
-    return iterator<T, Ent>(nullptr, nullptr);
-  }
-
-  auto end() {
-    if (components)
-      return iterator(components->data() + components->size(),
-                      entities->data() + entities->size());
-    return iterator<T, Ent>(nullptr, nullptr);
-  }
-
-  auto size() {
-    if (components && entities)
-      return std::min(components->size(), entities->size());
-    return std::size_t(0);
-  }
-
-  auto empty() {
-    if (components && entities)
-      return std::min(components->size(), entities->size()) == 0;
-    return true;
-  }
-
-  auto operator[](size_t i) {
-    return std::make_tuple(std::ref((*components)[i]),
-                           std::ref((*entities)[i]));
-  }
-
-  std::vector<T>* components{nullptr};
-  std::vector<Ent>* entities{nullptr};
-};
-
-template <typename T, typename Ent>
-class ConstComponents {
- public:
-  ConstComponents(const std::vector<T>* comps, std::vector<Ent>* ents)
-      : components(comps), entities(ents) {}
-  ConstComponents& operator=(const ConstComponents& copy) = delete;
-
-  template <typename T1, typename T2>
-  class iterator {
-   public:
-    iterator(T1* comp, T2* ent) : component(comp), entity(ent) {}
-
-    auto operator++() {
-      ++component;
-      ++entity;
-      return *this;
-    }
-    bool operator!=(const iterator& other) {
-      return other.component != component;
-    }
-    auto operator*() {
-      return std::make_tuple(std::ref(*component), std::ref(*entity));
-    }
-
-   private:
-    T1* component;
-    T2* entity;
-  };
-
-  auto begin() {
-    if (components) return iterator(components->data(), entities->data());
-    return iterator<const T, Ent>(nullptr, nullptr);
-  }
-
-  auto end() {
-    if (components)
-      return iterator(components->data() + components->size(),
-                      entities->data() + entities->size());
-    return iterator<const T, Ent>(nullptr, nullptr);
-  }
-
-  auto size() {
-    if (components && entities)
-      return std::min(components->size(), entities->size());
-    return std::size_t(0);
-  }
-
-  auto empty() {
-    if (components && entities)
-      return std::min(components->size(), entities->size()) == 0;
-    return true;
-  }
-
-  auto operator[](size_t i) {
-    return std::make_tuple(std::ref((*components)[i]),
-                           std::ref((*entities)[i]));
-  }
-
-  const std::vector<T>* components{nullptr};
-  std::vector<Ent>* entities{nullptr};
-};
-
-template <typename T, typename Ent>
-class UpdatedComponents {
- public:
-  UpdatedComponents(T comps, std::vector<Ent>* ents, std::vector<size_t>* inds)
-      : components(comps), entities(ents), indices(inds) {}
-  UpdatedComponents& operator=(const UpdatedComponents& copy) = delete;
-
-  template <typename T1, typename T2>
-  class iterator {
-   public:
-    iterator(T1 comp, T2 ent, size_t* inds)
-        : component(comp), entity(ent), ind_iterator(inds) {}
-
-    auto operator++() {
-      ind_iterator++;
-      return *this;
-    }
-
-    bool operator!=(const iterator& other) {
-      return other.ind_iterator != ind_iterator;
-    }
-
-    auto operator*() {
-      return std::make_tuple(std::ref((*component)[*ind_iterator]),
-                             std::ref((*entity)[*ind_iterator]));
-    }
-
-   private:
-    T1 component;
-    T2 entity;
-    size_t* ind_iterator;
-  };
-
-  auto begin() {
-    if (components) return iterator(components, entities, indices->data());
-    return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
-  }
-
-  auto end() {
-    if (components)
-      return iterator(components, entities, indices->data() + indices->size());
-    return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
-  }
-
-  auto size() {
-    if (indices) return indices->size();
-    return std::size_t(0);
-  }
-
-  auto empty() {
-    if (indices) return indices->size() == 0;
-    return true;
-  }
-
-  auto operator[](size_t i) {
-    return std::make_tuple(std::ref((*components)[(*indices)[i]]),
-                           std::ref((*entities)[(*indices)[i]]));
-  }
-
-  T components;
-  std::vector<Ent>* entities;
-  std::vector<size_t>* indices;
-};
-
 class EntityManager {
  public:
-  #ifdef UNIT_TEST
+  template <typename T>
+  using dsm = std::unordered_map<std::type_index, T>;
+
+#ifdef UNIT_TEST
   EntityManager(EntityManagerMock* mock) : mock_(mock) {}
   EntityManagerMock* mock_;
-  #endif
+#endif
 
   EntityManager() {}
 
@@ -468,7 +130,9 @@ class EntityManager {
   template <typename T>
   ConstComponents<T, Entity> ComponentsR() const {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<ConstComponents<T, Entity>>(mock_->ComponentsR(typeid(T)));
+    if (mock_)
+      return std::any_cast<ConstComponents<T, Entity>>(
+          mock_->ComponentsR(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -481,12 +145,14 @@ class EntityManager {
   template <typename T>
   Components<T, Entity> ComponentsW() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<Components<T, Entity>>(mock_->ComponentsW(typeid(T)));
+    if (mock_)
+      return std::any_cast<Components<T, Entity>>(
+          mock_->ComponentsW(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
       return Components<T, Entity>(&ds->components[write_buffer_id_],
-                                &ds->entities);
+                                   &ds->entities);
     }
     return Components<T, Entity>(nullptr, nullptr);
   }
@@ -494,7 +160,9 @@ class EntityManager {
   template <typename T>
   UpdatedComponents<const std::vector<T>*, Entity> UpdatedComponentsR() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<UpdatedComponents<const std::vector<T>*, Entity>>(mock_->UpdatedComponentsR(typeid(T)));
+    if (mock_)
+      return std::any_cast<UpdatedComponents<const std::vector<T>*, Entity>>(
+          mock_->UpdatedComponentsR(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -503,13 +171,15 @@ class EntityManager {
           &ds->updated_components);
     }
     return UpdatedComponents<const std::vector<T>*, Entity>(nullptr, nullptr,
-                                                         nullptr);
+                                                            nullptr);
   }
 
   template <typename T>
   UpdatedComponents<std::vector<T>*, Entity> UpdatedComponentsW() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<UpdatedComponents<std::vector<T>*, Entity>>(mock_->UpdatedComponentsW(typeid(T)));
+    if (mock_)
+      return std::any_cast<UpdatedComponents<std::vector<T>*, Entity>>(
+          mock_->UpdatedComponentsW(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -517,13 +187,16 @@ class EntityManager {
           &ds->components[write_buffer_id_], &ds->entities,
           &ds->updated_components);
     }
-    return UpdatedComponents<std::vector<T>*, Entity>(nullptr, nullptr, nullptr);
+    return UpdatedComponents<std::vector<T>*, Entity>(nullptr, nullptr,
+                                                      nullptr);
   }
 
   template <typename T>
   UpdatedComponents<const std::vector<T>*, Entity> AddedComponentsR() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<UpdatedComponents<const std::vector<T>*, Entity>>(mock_->AddedComponentsR(typeid(T)));
+    if (mock_)
+      return std::any_cast<UpdatedComponents<const std::vector<T>*, Entity>>(
+          mock_->AddedComponentsR(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -532,13 +205,15 @@ class EntityManager {
           &ds->added_components);
     }
     return UpdatedComponents<const std::vector<T>*, Entity>(nullptr, nullptr,
-                                                         nullptr);
+                                                            nullptr);
   }
 
   template <typename T>
   UpdatedComponents<std::vector<T>*, Entity> AddedComponentsW() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<UpdatedComponents<std::vector<T>*, Entity>>(mock_->AddedComponentsW(typeid(T)));
+    if (mock_)
+      return std::any_cast<UpdatedComponents<std::vector<T>*, Entity>>(
+          mock_->AddedComponentsW(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -546,13 +221,16 @@ class EntityManager {
           &ds->components[write_buffer_id_], &ds->entities,
           &ds->added_components);
     }
-    return UpdatedComponents<std::vector<T>*, Entity>(nullptr, nullptr, nullptr);
+    return UpdatedComponents<std::vector<T>*, Entity>(nullptr, nullptr,
+                                                      nullptr);
   }
 
   template <typename T>
   RemovedComponentsHolder<T, Entity> RemovedComponents() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<RemovedComponentsHolder<T, Entity>>(mock_->RemovedComponents(typeid(T)));
+    if (mock_)
+      return std::any_cast<RemovedComponentsHolder<T, Entity>>(
+          mock_->RemovedComponents(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -566,7 +244,8 @@ class EntityManager {
   template <typename T>
   EntityHolder<Entity> Entities() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<EntityHolder<Entity>>(mock_->Entities(typeid(T)));
+    if (mock_)
+      return std::any_cast<EntityHolder<Entity>>(mock_->Entities(typeid(T)));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ds = std::any_cast<std::shared_ptr<DataStore<T>>>(it->second);
@@ -578,7 +257,7 @@ class EntityManager {
   template <typename T>
   T& AddComponent(Entity& entity) {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<T&>(mock_->AddComponent(typeid(T),entity));
+    if (mock_) return std::any_cast<T&>(mock_->AddComponent(typeid(T), entity));
 #endif
     auto ptr = std::make_shared<T>();
     add_component_cache_.push_back([this, ptr, entity]() {
@@ -613,7 +292,7 @@ class EntityManager {
   template <typename T>
   void RemoveComponent(Entity& entity, std::uint64_t sub_loc = 0) {
 #ifdef UNIT_TEST
-    if (mock_) return mock_->RemoveComponent(typeid(T),entity,sub_loc);
+    if (mock_) return mock_->RemoveComponent(typeid(T), entity, sub_loc);
 #endif
     remove_component_cache_.push_back(std::make_pair(
         [this, entity, sub_loc]() {
@@ -661,7 +340,8 @@ class EntityManager {
   template <typename T>
   const T* ComponentR(const Entity& entity, std::uint64_t sub_loc = 0) {
 #ifdef UNIT_TEST
-    if (mock_) return &std::any_cast<T&>(mock_->ComponentR(typeid(T),entity,sub_loc));
+    if (mock_)
+      return &std::any_cast<T&>(mock_->ComponentR(typeid(T), entity, sub_loc));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ent_loc = entity.Loc<T>(sub_loc);
@@ -675,7 +355,8 @@ class EntityManager {
   template <typename T>
   T* ComponentW(const Entity& entity, std::uint64_t sub_loc = 0) {
 #ifdef UNIT_TEST
-    if (mock_) return &std::any_cast<T&>(mock_->ComponentW(typeid(T),entity,sub_loc));
+    if (mock_)
+      return &std::any_cast<T&>(mock_->ComponentW(typeid(T), entity, sub_loc));
 #endif
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
       auto ent_loc = entity.Loc<T>(sub_loc);
@@ -688,13 +369,14 @@ class EntityManager {
     return nullptr;
   }
 
-
   template <typename T>
   EntityComponents<const T> ComponentsR(const Entity& entity) {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<EntityComponents<const T>>(mock_->ComponentsR(typeid(T),entity));
+    if (mock_)
+      return std::any_cast<EntityComponents<const T>>(
+          mock_->ComponentsR(typeid(T), entity));
 #endif
-    auto func = [this, entity](size_t sub_loc) -> auto {
+    auto func = [ this, entity ](size_t sub_loc) -> auto {
       return ComponentR<T>(entity, sub_loc);
     };
     return EntityComponents<const T>(ComponentCount<T>(entity), func);
@@ -703,15 +385,16 @@ class EntityManager {
   template <typename T>
   EntityComponents<T> ComponentsW(Entity& entity) {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<EntityComponents<T>>(mock_->ComponentsW(typeid(T),entity));
+    if (mock_)
+      return std::any_cast<EntityComponents<T>>(
+          mock_->ComponentsW(typeid(T), entity));
 #endif
-    auto func = [this, entity](size_t sub_loc) -> auto {
+    auto func = [ this, entity ](size_t sub_loc) -> auto {
       return ComponentW<T>(entity, sub_loc);
     };
     return EntityComponents<T>(ComponentCount<T>(entity), func);
   }
 
- private:
   template <typename T>
   std::uint64_t ComponentCount(const Entity& entity) const {
     if (auto it = entity.loc_map_->find(typeid(T));
@@ -720,6 +403,7 @@ class EntityManager {
     return std::uint64_t(0);
   }
 
+ private:
   template <typename T>
   void UpdateDatastore() {
     if (auto it = data_stores_.find(typeid(T)); it != std::end(data_stores_)) {
@@ -787,3 +471,203 @@ using Entity_t = Entity;
 using EntityManager_t = EntityManager;
 using SystemManager_t = SystemManager<EntityManager_t>;
 }  // namespace ecs
+
+namespace ecss {
+class EntityManager {
+ public:
+#ifdef UNIT_TEST
+  EntityManager(EntityManagerMock* mock) : mock_(mock) {}
+  EntityManagerMock* mock_{nullptr};
+#endif
+
+  EntityManager() = default;
+
+  Entity CreateEntity() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<Entity>(mock_->CreateEntity());
+#endif
+    return Entity(0);
+  }
+
+  void SyncSwap() {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->SyncSwap();
+#endif
+  }
+
+  template <typename T>
+  T& AddComponent() {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<T&>(mock_->AddComponent(typeid(T)));
+#endif
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
+    auto& data_store = std::any_cast<Internal<T>&>(it->second);
+    auto element = data_store.emplace_back();
+    return element->first;
+  }
+
+  template <typename T>
+  T* Component() {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->Component(typeid(T)));
+#endif
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
+    auto& data_store = std::any_cast<Internal<T>&>(it->second);
+    if (data_store.empty()) return nullptr;
+    return &data_store[0].first;
+  }
+
+  template <typename T>
+  const T* ComponentR() {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->ComponentR(typeid(T)));
+#endif
+    return Component<T>();
+  }
+
+  template <typename T>
+  T* ComponentW() {
+#ifdef UNIT_TEST
+    if (mock_) return &std::any_cast<T&>(mock_->ComponentW(typeid(T)));
+#endif
+    return Component<T>();
+  }
+
+  template <typename T>
+  T& AddComponent(Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_) return std::any_cast<T&>(mock_->AddComponent(typeid(T), entity));
+#endif
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
+    auto& data_store = std::any_cast<Internal<T>&>(it->second);
+    auto element = data_store.emplace_back(T{}, entity);
+    auto& loc_map = (*entity.loc_)[typeid(T).hash_code()];
+    loc_map.push_back(std::any(element));
+    return element->first;
+  }
+
+  template <typename T>
+  T* Component(const Entity& entity, std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_)
+      return &std::any_cast<T&>(mock_->Component(typeid(T), entity, sub_loc));
+#endif
+    auto ent_it = entity.loc_->find(typeid(T).hash_code());
+    if (ent_it == entity.loc_->end()) return nullptr;
+    auto& it = std::any_cast<
+        typename tbb::concurrent_vector<std::pair<T, Entity>>::iterator&>(
+        ent_it->second[sub_loc]);
+    return &it->first;
+  }
+
+  template <typename T>
+  const T* ComponentR(const Entity& entity, std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_)
+      return &std::any_cast<T&>(mock_->ComponentR(typeid(T), entity, sub_loc));
+#endif
+    return Component<T>(entity, sub_loc);
+  }
+
+  template <typename T>
+  T* ComponentW(const Entity& entity, std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_)
+      return &std::any_cast<T&>(mock_->ComponentW(typeid(T), entity, sub_loc));
+#endif
+    return Component<T>(entity, sub_loc);
+  }
+
+  template <typename T>
+  ComponentHolder<T> Components() {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<ComponentHolder<T>>(mock_->Components(typeid(T)));
+#endif
+    auto [it, inserted] =
+        data_stores_.emplace(typeid(T).hash_code(), std::any(Internal<T>()));
+    auto& data_store = std::any_cast<Internal<T>&>(it->second);
+    return ComponentHolder<T>(&data_store);
+  }
+
+  template <typename T>
+  ComponentHolder<T> ComponentsR() {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<ComponentHolder<T>>(mock_->ComponentsR(typeid(T)));
+#endif
+    return Components<T>();
+  }
+
+  template <typename T>
+  ComponentHolder<T> ComponentsW() {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<ComponentHolder<T>>(mock_->ComponentsW(typeid(T)));
+#endif
+    return Components<T>();
+  }
+
+  template <typename T>
+  EntityComponents<T> Components(const Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<EntityComponents<T>>(
+          mock_->Components(typeid(T), entity));
+#endif
+    auto ent_it = entity.loc_->find(typeid(T).hash_code());
+    if (ent_it == entity.loc_->end()) return EntityComponents<T>(nullptr);
+    return EntityComponents<T>(&ent_it->second);
+  }
+
+  template <typename T>
+  EntityComponents<T> ComponentsR(const Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<EntityComponents<T>>(
+          mock_->ComponentsR(typeid(T), entity));
+#endif
+    return Components<T>(entity);
+  }
+
+  template <typename T>
+  EntityComponents<T> ComponentsW(const Entity& entity) {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<EntityComponents<T>>(
+          mock_->ComponentsW(typeid(T), entity));
+#endif
+    return Components<T>(entity);
+  }
+
+  template <typename T>
+  void RemoveComponent() {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->RemoveComponent(typeid(T));
+#endif
+  }
+
+  template <typename T>
+  void RemoveComponent(const Entity& entity, const std::uint64_t sub_loc = 0) {
+#ifdef UNIT_TEST
+    if (mock_) return mock_->RemoveComponent(typeid(T), entity, sub_loc);
+#endif
+    auto ent_it = entity.loc_->find(typeid(T).hash_code());
+    if (ent_it == entity.loc_->end()) return;
+    auto& it = std::any_cast<
+        typename tbb::concurrent_vector<std::pair<T, Entity>>::iterator&>(
+        ent_it->second[sub_loc]);
+    it->second = Entity();
+  }
+
+ private:
+  tbb::concurrent_unordered_map<size_t, std::any> data_stores_;
+};
+
+using Entity_t = Entity;
+using EntityManager_t = ecss::EntityManager;
+using SystemManager_t = ecs::SystemManager<EntityManager_t>;
+}  // namespace ecss
