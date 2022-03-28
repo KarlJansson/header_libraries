@@ -31,6 +31,8 @@ class EntityManagerMock {
   MOCK_METHOD(std::any&, UpdatedComponentsW, (std::type_index));
   MOCK_METHOD(std::any&, RemovedComponents, (std::type_index));
   MOCK_METHOD(std::any&, Entities, (std::type_index));
+
+  MOCK_METHOD(std::any&, ComponentCount, (std::type_index, const Entity&));
 };
 }  // namespace ecs
 

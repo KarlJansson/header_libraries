@@ -397,6 +397,11 @@ class EntityManager {
 
   template <typename T>
   std::uint64_t ComponentCount(const Entity& entity) const {
+#ifdef UNIT_TEST
+    if (mock_)
+      return std::any_cast<std::uint64_t>(
+          mock_->ComponentCount(typeid(T), entity));
+#endif
     if (auto it = entity.loc_map_->find(typeid(T));
         it != std::end(*entity.loc_map_))
       return it->second.size();
