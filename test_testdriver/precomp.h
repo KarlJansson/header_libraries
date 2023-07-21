@@ -13,6 +13,7 @@
 #include <fstream>
 #include <regex>
 #include <array>
+#include <cstdint>
 #include <atomic>
 #include <chrono>
 #include <functional>

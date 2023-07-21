@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace sml {
 template <std::uint32_t COLUMNS, std::uint32_t PADDING = 3>
