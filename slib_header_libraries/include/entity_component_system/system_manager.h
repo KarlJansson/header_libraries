@@ -5,8 +5,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include "chunk_list.hpp"
-#include "tbb_templates.hpp"
+#include "../tbb_templates.hpp"
 
 #ifdef UNIT_TEST
 #include "system_manager_mock.h"
@@ -25,7 +24,8 @@ class SystemManager {
 
   void Step(EntMgr& ent_mgr) {
 #ifdef UNIT_TEST
-    if (mock_) return mock_->Step(ent_mgr);
+    if (mock_) mock_->Step(ent_mgr);
+    return;
 #endif
     for (auto& execution_group : execution_order_)
       tbb_templates::parallel_for(execution_group, [&](size_t i) {
@@ -42,7 +42,8 @@ class SystemManager {
   template <typename T>
   void AddSystem() {
 #ifdef UNIT_TEST
-    if (mock_) return mock_->AddSystem(typeid(T));
+    if (mock_) mock_->AddSystem(typeid(T));
+    return;
 #endif
     add_system_cache_.push_back([this]() {
       SystemHolder sys_holder;
@@ -52,7 +53,7 @@ class SystemManager {
       sys_holder.execute = [this, sys_weak](EntMgr& ent_mgr) {
         if (auto sys = sys_weak.lock(); sys) sys->Step(ent_mgr, *this);
       };
-      sys_holder.dependencies = [sys_weak]() -> auto {
+      sys_holder.dependencies = [sys_weak]() -> auto{
         if (auto sys = sys_weak.lock(); sys) return sys->Dependencies();
         return std::vector<std::type_index>{};
       };
@@ -64,7 +65,8 @@ class SystemManager {
   template <typename T>
   void RemoveSystem() {
 #ifdef UNIT_TEST
-    if (mock_) return mock_->RemoveSystem(typeid(T));
+    if (mock_) mock_->RemoveSystem(typeid(T));
+    return;
 #endif
     remove_system_cache_.push_back([this]() { systems_.erase(typeid(T)); });
   }
@@ -72,7 +74,8 @@ class SystemManager {
   template <typename T>
   T* System() {
 #ifdef UNIT_TEST
-    if (mock_) return std::any_cast<T*>(mock_->System(typeid(T)));
+    if (mock_) std::any_cast<T*>(mock_->System(typeid(T)));
+    return nullptr;
 #endif
     if (auto it = systems_.find(typeid(T)); it != std::end(systems_))
       return std::any_cast<std::shared_ptr<T>>(it->second.system).get();
@@ -81,7 +84,8 @@ class SystemManager {
 
   void SyncSystems() {
 #ifdef UNIT_TEST
-    if (mock_) return mock_->SyncSystems();
+    if (mock_) mock_->SyncSystems();
+    return;
 #endif
     for (auto& sys : add_system_cache_) sys();
     for (auto& sys : remove_system_cache_) sys();

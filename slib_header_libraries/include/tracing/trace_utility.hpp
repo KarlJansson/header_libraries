@@ -1,13 +1,60 @@
 #pragma once
 
+// #include <format>
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <source_location>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 
 namespace tu {
+class TStr {
+ public:
+  template <typename... Args>
+  TStr(const char* fmt, Args... args) {
+    ss_ << std::hex << std::time(nullptr) << "\e" << fmt << "\e";
+    (ss_ << ... << (ToString(args) + "\e"));
+  }
+
+  std::string str() { return ss_.str(); }
+  std::string str_pretty() {
+    std::string str;
+    while (std::getline(ss_, str, '\e')) {
+      std::cout << str << std::endl;
+    }
+    return ss_.str();
+  }
+
+ private:
+  template <typename T>
+  std::string ToString(T s) {
+    return std::to_string(s);
+  }
+
+  std::stringstream ss_;
+};
+
+template <>
+std::string TStr::ToString<std::string>(std::string s) {
+  return s;
+}
+
+template <>
+std::string TStr::ToString<const char*>(const char* s) {
+  return std::string(s);
+}
+
+inline void Trace(TStr&& fmt, const std::source_location location =
+                                  std::source_location::current()) {
+  std::string_view file_path{location.file_name()};
+  std::cout << file_path.substr(file_path.find_last_of('/') + 1) << "("
+            << location.line() << ":" << location.column() << ")";
+  std::cout << fmt.str_pretty() << std::endl;
+  // std::cout << location.function_name() << std::endl;
+}
+
 class TraceInstance {
  public:
   TraceInstance() {

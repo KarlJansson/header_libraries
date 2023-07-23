@@ -13,6 +13,8 @@ set(cpp_files
   ./include/entity_component_system/entity_manager_util.h
   ./include/entity_component_system/mocks/system_manager_mock.h
   ./include/entity_component_system/mocks/entity_manager_mock.h
+  ./test/test_json_to_table.h
+  ./test/test_trace_utility.h
   ./test/test_entity_component_system.h
   ./test/test_file_system_utility.h
   ./test/test_string_manipulation.h
@@ -59,6 +61,8 @@ source_group(source/string_manipulation FILES
 )
 
 source_group(test FILES
+  ./test/test_json_to_table.h
+  ./test/test_trace_utility.h
   ./test/test_entity_component_system.h
   ./test/test_file_system_utility.h
   ./test/test_string_manipulation.h

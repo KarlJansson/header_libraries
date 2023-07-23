@@ -1,4 +1,4 @@
-cpp_version : c++17 -O3
+cpp_version : gnu++2b -O
 
 {
 	name : "tbb/tbb.h"

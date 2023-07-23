@@ -5,7 +5,7 @@
 #include <typeindex>
 #include <unordered_map>
 
-#include "tbb_templates.hpp"
+#include "../tbb_templates.hpp"
 
 namespace ecss {
 class Entity {

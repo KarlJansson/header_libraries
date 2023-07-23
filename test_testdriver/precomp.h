@@ -6,9 +6,11 @@
 #include <any>
 #include <memory>
 #include <typeindex>
+#include "../tbb_templates.hpp"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tbb/tbb.h>
+#include <string_view>
 #include <filesystem>
 #include <fstream>
 #include <regex>
@@ -22,6 +24,7 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <source_location>
 #include <sstream>
 #include <string>
 #include <unordered_map>

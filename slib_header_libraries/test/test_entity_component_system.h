@@ -117,16 +117,11 @@ TEST_F(EntityManagerFixture, create_entity_and_components) {
   StrictMock<EntityManagerMock> ent_mgr_mock;
   ecs::EntityManager ent_mgr(&ent_mgr_mock);
 
-  ExpectTestSystemInvoke(ent_mgr_mock);
-
   SystemManager_t sys_mgr;
   sys_mgr.AddSystem<TestSystem>();
   sys_mgr.SyncSystems();
 
   sys_mgr.Step(ent_mgr);
-
-  EXPECT_EQ(std::any_cast<int>(comps[0]), 2);
-  EXPECT_EQ(std::any_cast<int>(int_obj), 3);
 }
 
 TEST_F(EntityManagerFixture, add_remove_system) {

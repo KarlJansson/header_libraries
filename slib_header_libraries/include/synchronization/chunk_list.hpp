@@ -65,4 +65,29 @@ class ChunkList {
   size_t tail_{0};
   std::atomic<size_t> num_elements_{0};
 };
+
+template <typename T, size_t CHUNK_SIZE = 10>
+class ChunkList2 {
+ public:
+  ChunkList2() { AllocateChunk(); }
+
+  struct Chunk {
+    std::array<T, CHUNK_SIZE> elements;
+    std::uint8_t num_elements{0};
+    Chunk* next_chunk{nullptr};
+  };
+  using chunk_store_t = std::vector<std::unique_ptr<Chunk>>;
+
+  class iterator {};
+
+ private:
+  void AllocateChunk() {
+    auto next_chunk = std::make_unique<Chunk>();
+    if (!chunk_store.empty()) chunk_store.back()->next_chunk = next_chunk.get();
+    chunk_store.emplace_back(std::move(next_chunk));
+  }
+
+  chunk_store_t chunk_store;
+  std::uint8_t num_elements{0};
+};
 }  // namespace synchronization

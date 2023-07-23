@@ -13,10 +13,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "../tbb_templates.hpp"
 #include "entity.h"
 #include "entity_manager_util.h"
 #include "system_manager.h"
-#include "tbb_templates.hpp"
 
 #ifdef UNIT_TEST
 #include "entity_manager_mock.h"

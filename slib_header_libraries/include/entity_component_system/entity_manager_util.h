@@ -76,14 +76,16 @@ class RemovedComponentsHolder {
 
   auto begin() {
     if (components)
-      return iterator(components, entities, component_locs->data());
+      return iterator<const std::vector<T>*>(components, entities,
+                                             component_locs->data());
     return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
   }
 
   auto end() {
     if (components)
-      return iterator(components, entities,
-                      component_locs->data() + component_locs->size());
+      return iterator<const std::vector<T>*>(
+          components, entities,
+          component_locs->data() + component_locs->size());
     return iterator<const std::vector<T>*>(nullptr, nullptr, nullptr);
   }
 
@@ -313,13 +315,16 @@ class UpdatedComponents {
   };
 
   auto begin() {
-    if (components) return iterator(components, entities, indices->data());
+    if (components)
+      return iterator<T, std::vector<Ent>*>(components, entities,
+                                            indices->data());
     return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
   }
 
   auto end() {
     if (components)
-      return iterator(components, entities, indices->data() + indices->size());
+      return iterator<T, std::vector<Ent>*>(components, entities,
+                                            indices->data() + indices->size());
     return iterator<T, std::vector<Ent>*>(nullptr, nullptr, nullptr);
   }
 
